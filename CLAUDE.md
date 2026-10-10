@@ -35,7 +35,7 @@ Setup: `uv venv .venv -p 3.12 && uv pip install -p .venv -e ".[dev]"`, or use pi
 - **Paid articles** are never fetched or analyzed. They're detected by the outlet's `paywall` URL patterns, a feed premium flag, or short extracted text.
 - **The model sees only headline and body.** It never sees the outlet, and `strip_author` removes the byline name from the text.
 - **Author stats** are aggregates, never labels. Show them only at N ≥ `author_min_articles`, always with N and the caveat.
-- **Neutral UI.** No red/blue or good/bad color coding. Scales run low-on-the-left inside `dir="ltr"`.
+- **Neutral UI.** No red/blue or good/bad color coding. Scales run low-on-the-left inside `dir="ltr"`. Each axis has one identity hue (`--axis-*` in `style.css`, no red or blue) that stays the same along the whole scale; color may show which axis and how strong, never which side.
 - **Hebrew everywhere user-facing.** The LLM's free-text fields are validated as Hebrew. Prompt instructions are in English on purpose.
 - **Changing scales or prompt wording means bumping `PROMPT_VERSION`.** A new output field goes in `LLMAnalysis`, `to_db_row`, the `analyses` table, `serialize.py` and the tests.
 - **`eval/data/` and `data/` are git-ignored.** They hold article text and the DB, so never commit them. `eval-export --overwrite` destroys the user's hand labels; only run it when asked.

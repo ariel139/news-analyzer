@@ -23,6 +23,13 @@
   --font: "Heebo", system-ui, -apple-system, "Segoe UI", "Noto Sans Hebrew", Arial, sans-serif;
   --font-display: "Frank Ruhl Libre", "Heebo", Georgia, serif;
   --ease: cubic-bezier(.2, .7, .2, 1);
+  /* One identity hue per axis. A hue never changes along a scale, so color says
+     "which axis", never "which side". Deliberately no red or blue. */
+  --axis-overall: #7356c8;
+  --axis-security: #1d877d;
+  --axis-religion: #b5791a;
+  --axis-economy: #4a8c2f;
+  --axis-tone: #a8487f;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -42,6 +49,11 @@
   --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 28px -14px rgba(0, 0, 0, .6);
   --shadow-lg: 0 2px 4px rgba(0, 0, 0, .3), 0 20px 44px -18px rgba(0, 0, 0, .7);
   --header-bg: rgba(15, 17, 20, .78);
+  --axis-overall: #a891f0;
+  --axis-security: #4cc2b6;
+  --axis-religion: #e6b45c;
+  --axis-economy: #8ccc6c;
+  --axis-tone: #e08bbf;
 }
 
 * { box-sizing: border-box; }
@@ -258,9 +270,12 @@ nav a[aria-current="page"] { color: var(--text); background: var(--surface-2); }
 /* compact overall-leaning strip on the card (low = left, inside dir="ltr") */
 .lean { display: flex; align-items: center; gap: 8px; font-size: .76rem; color: var(--muted); margin-top: 2px; }
 .lean-dots { display: inline-flex; gap: 4px; align-items: center; }
-.lean-dots i { width: 18px; height: 6px; border-radius: 3px; background: var(--surface-3); display: block; }
-.lean-dots i.on { background: var(--ink); }
-.lean-dots.conf-low i.on { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.lean-dots i {
+  width: 18px; height: 6px; border-radius: 3px; display: block;
+  background: color-mix(in srgb, var(--axis-overall) 16%, var(--surface-3));
+}
+.lean-dots i.on { background: var(--axis-overall); }
+.lean-dots.conf-low i.on { background: transparent; box-shadow: inset 0 0 0 1.5px var(--axis-overall); }
 .lean-dots.conf-medium i.on { opacity: .7; }
 .lean-label { font-weight: 600; color: var(--text); }
 
@@ -289,7 +304,16 @@ nav a[aria-current="page"] { color: var(--text); background: var(--surface-2); }
 }
 .axis:first-child { background: var(--surface-2); border-color: transparent; }
 .axis-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .9rem; }
-.axis-title { font-weight: 700; }
+.axis-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.axis-title::before {
+  content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--hue); flex: none;
+}
+.axis.na .axis-title::before { background: var(--surface-3); }
+.ax-overall { --hue: var(--axis-overall); }
+.ax-security { --hue: var(--axis-security); }
+.ax-religion { --hue: var(--axis-religion); }
+.ax-economy { --hue: var(--axis-economy); }
+.ax-tone { --hue: var(--axis-tone); }
 .conf {
   color: var(--muted); font-size: .72rem; font-weight: 500;
   background: var(--surface-2); border-radius: 999px; padding: 1px 8px;
@@ -297,21 +321,36 @@ nav a[aria-current="page"] { color: var(--text); background: var(--surface-2); }
 .axis:first-child .conf { background: var(--surface); }
 .scale { margin-top: 10px; }
 .track { position: relative; height: 22px; margin: 0 8px; }
+/* Track tint grows with distance from the neutral point, the same on both sides of a
+   two-sided scale, so it encodes strength, not direction. */
 .track::before {
-  content: ""; position: absolute; left: -8px; right: -8px; top: 8px; height: 6px;
-  border-radius: 3px; background: var(--surface-3);
+  content: ""; position: absolute; left: -8px; right: -8px; top: 7px; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--hue) 30%, var(--surface-3)),
+    color-mix(in srgb, var(--hue) 6%, var(--surface-3)) 50%,
+    color-mix(in srgb, var(--hue) 30%, var(--surface-3)));
+}
+.scale.seq .track::before {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--hue) 6%, var(--surface-3)),
+    color-mix(in srgb, var(--hue) 30%, var(--surface-3)));
+}
+.fill {
+  position: absolute; top: 7px; height: 8px; border-radius: 4px; background: var(--hue);
+  opacity: .9;
 }
 .tick {
   position: absolute; top: 9px; width: 4px; height: 4px; border-radius: 50%;
-  background: var(--muted); opacity: .45; transform: translateX(-50%);
+  background: var(--surface); opacity: .8; transform: translateX(-50%);
 }
 .marker {
-  position: absolute; top: 2px; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--ink); transform: translateX(-50%);
-  border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--ink), var(--shadow);
+  position: absolute; top: 1px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--hue); transform: translateX(-50%);
+  border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--hue), var(--shadow);
 }
 .axis:first-child .marker:not(.conf-low) { border-color: var(--surface-2); }
-.marker.conf-low { background: var(--surface); border: 2px dashed var(--ink); box-shadow: none; }
+.marker.conf-low { background: var(--surface); border: 2px dashed var(--hue); box-shadow: none; }
+.track:has(.conf-low) .fill { opacity: .45; }
 .marker.conf-medium { opacity: .78; }
 .ends { display: flex; justify-content: space-between; font-size: .74rem; color: var(--muted); margin-top: 2px; }
 .axis.na { background: transparent; border-style: dashed; }
