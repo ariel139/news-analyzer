@@ -15,7 +15,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Sequence
 
 from news_analyzer.collectors.models import ArticleCandidate
 from news_analyzer.collectors.normalize import matches_any, title_key
@@ -226,7 +226,7 @@ ANALYSIS_COLS = ("an.article_type, an.topic, an.favored_side, an.security_score,
                  "an.created_at AS analyzed_at")
 
 
-def query_feed(conn: sqlite3.Connection, *, outlet: str | None = None, topic: str | None = None,
+def query_feed(conn: sqlite3.Connection, *, outlets: Sequence[str] = (), topic: str | None = None,
                leaning: str | None = None, article_type: str | None = None,
                analyzed_only: bool = False, q: str | None = None,
                limit: int = 50, offset: int = 0) -> list[sqlite3.Row]:
@@ -236,8 +236,8 @@ def query_feed(conn: sqlite3.Connection, *, outlet: str | None = None, topic: st
         where.append("a.title LIKE ? ESCAPE '!'"); params.append(f"%{escaped}%")
     if analyzed_only:
         where.append("an.article_id IS NOT NULL")
-    if outlet:
-        where.append("a.outlet = ?"); params.append(outlet)
+    if outlets:
+        where.append(f"a.outlet IN ({', '.join('?' * len(outlets))})"); params.extend(outlets)
     if topic:
         where.append("an.topic = ?"); params.append(topic)
     if article_type:

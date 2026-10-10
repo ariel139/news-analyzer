@@ -31,10 +31,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 15h16M6 9h12"/><circle cx="14" cy="15" r="2.4" fill="currentColor" stroke="none"/></svg>
           </span>
           <span class="brand-text">מנתח חדשות</span>
-          <span class="poc">ניסוי</span>
         </a>
         <span class="rail-actions">
-          <a class="icon-btn phone-only" href="/methodology" aria-label="איך זה עובד" title="איך זה עובד">
+          <a class="icon-btn" href="/methodology" aria-label="איך זה עובד" title="איך זה עובד"{% if page == '/methodology' %} aria-current="page"{% endif %}>
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
           </a>
           <button type="button" id="theme-toggle" class="icon-btn theme-toggle" aria-label="מעבר למצב כהה" aria-pressed="false">
@@ -52,10 +51,6 @@
         <a class="nav-link" href="/?analyzed=1"{% if page == '/' and analyzed_on %} aria-current="page"{% endif %}>
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 19h16M7 15v-3M12 15V7M17 15v-6"/></svg>
           <span>כתבות שנותחו</span>
-        </a>
-        <a class="nav-link" href="/methodology"{% if page == '/methodology' %} aria-current="page"{% endif %}>
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-          <span>איך זה עובד</span>
         </a>
       </nav>
 

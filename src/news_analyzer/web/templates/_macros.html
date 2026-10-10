@@ -34,14 +34,14 @@
 <div id="active-chips" class="chips"{% if oob %} hx-swap-oob="true"{% endif %}>
   {% set x %}<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"/></svg>{% endset %}
   {% set chips = [] %}
-  {% if filters.topic %}{% set _ = chips.append(('topic', labels.TOPICS.get(filters.topic, filters.topic))) %}{% endif %}
-  {% if filters.outlet %}{% set _ = chips.append(('outlet', outlets.get(filters.outlet, filters.outlet))) %}{% endif %}
-  {% if filters.leaning %}{% set _ = chips.append(('leaning', labels.LEANINGS.get(filters.leaning, filters.leaning))) %}{% endif %}
-  {% if filters.type %}{% set _ = chips.append(('type', labels.ARTICLE_TYPES.get(filters.type, filters.type))) %}{% endif %}
-  {% if filters.analyzed %}{% set _ = chips.append(('analyzed', 'רק כתבות שנותחו')) %}{% endif %}
-  {% if filters.q %}{% set _ = chips.append(('q', '״' ~ filters.q ~ '״')) %}{% endif %}
-  {% for name, text in chips %}
-  <button type="button" class="chip" data-clear="{{ name }}" aria-label="הסרת הסינון: {{ text }}"><span>{{ text }}</span>{{ x }}</button>
+  {% if filters.topic %}{% set _ = chips.append(('topic', '', labels.TOPICS.get(filters.topic, filters.topic))) %}{% endif %}
+  {% for o in filters.outlet or [] %}{% set _ = chips.append(('outlet', o, outlets.get(o, o))) %}{% endfor %}
+  {% if filters.leaning %}{% set _ = chips.append(('leaning', '', labels.LEANINGS.get(filters.leaning, filters.leaning))) %}{% endif %}
+  {% if filters.type %}{% set _ = chips.append(('type', '', labels.ARTICLE_TYPES.get(filters.type, filters.type))) %}{% endif %}
+  {% if filters.analyzed %}{% set _ = chips.append(('analyzed', '', 'רק כתבות שנותחו')) %}{% endif %}
+  {% if filters.q %}{% set _ = chips.append(('q', '', '״' ~ filters.q ~ '״')) %}{% endif %}
+  {% for name, value, text in chips %}
+  <button type="button" class="chip" data-clear="{{ name }}"{% if value %} data-value="{{ value }}"{% endif %} aria-label="הסרת הסינון: {{ text }}"><span>{{ text }}</span>{{ x }}</button>
   {% endfor %}
   {% if chips | length > 1 %}<a class="chip-reset" href="/">ניקוי הכול</a>{% endif %}
 </div>

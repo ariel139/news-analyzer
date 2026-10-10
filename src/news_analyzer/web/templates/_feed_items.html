@@ -32,7 +32,7 @@
 {% endfor %}
 {% if next_offset is not none %}
 <li class="more">
-  <button class="btn ghost" hx-get="/fragments/feed?{% for k, v in filters.items() %}{{ k }}={{ v | urlencode }}&{% endfor %}after_day={{ last_day }}&offset={{ next_offset }}"
+  <button class="btn ghost" hx-get="/fragments/feed?{% if filters_qs %}{{ filters_qs }}&{% endif %}after_day={{ last_day }}&offset={{ next_offset }}"
           hx-target="closest li" hx-swap="outerHTML">טען עוד כתבות</button>
 </li>
 {% endif %}

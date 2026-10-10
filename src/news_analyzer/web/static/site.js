@@ -1,4 +1,4 @@
-// Page behaviours: filter shortcuts (topic rail, outlet pills, chips), filter popover/sheet,
+// Page behaviours: topic shortcuts in the rail, active-filter chips, filter popover/sheet,
 // the article drawer, copy-link buttons, "/" to search, back-to-top.
 (function () {
   var form = document.getElementById("filters");
@@ -16,7 +16,7 @@
   function feedQuery() {
     var p = new URLSearchParams();
     new FormData(form).forEach(function (v, k) {
-      if (v && !(k === "analyzed" && v === "0")) p.append(k, v);
+      if (v) p.append(k, v);
     });
     var s = p.toString();
     return s ? "/?" + s : "/";
@@ -45,6 +45,7 @@
     if (!sheet) return;
     var n = 0;
     sheet.querySelectorAll("select").forEach(function (s) { if (s.value) n++; });
+    sheet.querySelectorAll('input[type="checkbox"]').forEach(function (c) { if (c.checked) n++; });
     document.querySelectorAll("[data-filter-count]").forEach(function (el) {
       el.textContent = n;
       el.hidden = n === 0;
@@ -160,21 +161,22 @@
 
     if (!form) return;
 
-    // Chips clear one filter.
+    // Chips clear one filter (for outlets, one of the selected outlets).
     var chip = e.target.closest("[data-clear]");
     if (chip) {
       var name = chip.dataset.clear;
-      var el = form.elements[name];
-      if (!el) return;
-      el.value = name === "analyzed" ? "0" : "";
-      if (name === "topic" || name === "outlet") syncShortcuts(name, "");
+      form.querySelectorAll('[name="' + name + '"]').forEach(function (el) {
+        if (el.type === "checkbox") { if (!chip.dataset.value || el.value === chip.dataset.value) el.checked = false; }
+        else el.value = "";
+      });
+      if (name === "topic") syncShortcuts(name, "");
       updateFilterCount();
       reloadFeed();
       return;
     }
 
-    // Shortcuts set the matching form field and let htmx reload the feed. Off the front page
-    // (no #filters form) the topic links simply navigate.
+    // Topic shortcuts set the hidden field and let htmx reload the feed. Off the front page
+    // (no #filters form) they simply navigate.
     var btn = e.target.closest("[data-filter]");
     if (!btn) return;
     var field = form.elements[btn.dataset.filter];

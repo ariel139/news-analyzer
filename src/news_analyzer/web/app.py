@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from typing import Iterator
+from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 
@@ -14,6 +15,7 @@ from news_analyzer.web.serialize import article_dict
 
 LEANING_PATTERN = r"^(-2|-1|0|1|2|na)?$"
 PAGE_SIZE = 40
+MAX_OUTLETS = 20
 
 app = FastAPI(title="news_analyzer", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
@@ -28,14 +30,16 @@ def get_conn() -> Iterator[sqlite3.Connection]:
 
 class Filters:
     def __init__(self,
-                 outlet: str | None = Query(None, max_length=40),
+                 outlet: list[str] = Query([], description="Repeat to select several outlets"),
                  topic: str | None = Query(None, max_length=40),
                  leaning: str | None = Query(None, pattern=LEANING_PATTERN),
                  type: str | None = Query(None, max_length=20),
                  analyzed: bool = Query(False),
                  q: str | None = Query(None, max_length=80),
                  offset: int = Query(0, ge=0, le=100_000)):
-        self.outlet = outlet or None
+        if len(outlet) > MAX_OUTLETS or any(len(o) > 40 for o in outlet):
+            raise HTTPException(422, "invalid outlet")
+        self.outlets = list(dict.fromkeys(o for o in outlet if o))  # dedupe, keep order
         self.topic = topic if topic in labels.TOPICS else None
         self.leaning = leaning or None
         self.type = type if type in labels.ARTICLE_TYPES else None
@@ -44,7 +48,7 @@ class Filters:
         self.offset = offset
 
     def query(self, conn: sqlite3.Connection, limit: int = PAGE_SIZE) -> list[sqlite3.Row]:
-        return db.query_feed(conn, outlet=self.outlet, topic=self.topic, leaning=self.leaning,
+        return db.query_feed(conn, outlets=self.outlets, topic=self.topic, leaning=self.leaning,
                              article_type=self.type, analyzed_only=self.analyzed, q=self.q,
                              limit=limit, offset=self.offset)
 
@@ -162,10 +166,11 @@ def _feed_ctx(request: Request, f: Filters, conn: sqlite3.Connection, after_day:
     """`after_day` is the last day heading already on the page, so "load more" doesn't repeat it."""
     s, reg = get_settings(), get_outlets()
     items = [article_dict(r, reg, s.timezone) for r in f.query(conn)]
-    params = {k: v for k, v in {"outlet": f.outlet, "topic": f.topic, "leaning": f.leaning, "type": f.type,
+    params = {k: v for k, v in {"outlet": f.outlets, "topic": f.topic, "leaning": f.leaning, "type": f.type,
                                 "analyzed": "1" if f.analyzed else None, "q": f.q}.items() if v}
     last_day = items[-1]["published_local"].date().isoformat() if items else after_day
-    return {"request": request, "items": items, "filters": params, "after_day": after_day,
+    return {"request": request, "items": items, "filters": params, "filters_qs": urlencode(params, doseq=True),
+            "after_day": after_day,
             "outlets": {o.id: o.name for o in reg.enabled},
             "last_day": last_day, "next_offset": f.offset + PAGE_SIZE if len(items) == PAGE_SIZE else None}
 

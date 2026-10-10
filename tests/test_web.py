@@ -18,8 +18,7 @@ def test_analyzed_only_filter(client):
     r = client.get("/fragments/feed?analyzed=1")
     assert "כותרת מספר 0" in r.text
     assert "כותרת מספר 6" not in r.text and "בתשלום" not in r.text  # pending and paywalled hidden
-    assert 'name="analyzed" value="1" checked' in client.get("/?analyzed=1").text
-    assert "כותרת מספר 6" in client.get("/fragments/feed?analyzed=0").text  # the "all" segment
+    assert 'name="analyzed" value="1" role="switch" checked' in client.get("/?analyzed=1").text
 
 
 def test_outlet_logo_on_card(client):
@@ -92,11 +91,21 @@ def test_recent_list_and_active_topic(client):
     assert 'class="topic-link active" data-filter="topic" data-value="politics"' in r.text
 
 
-def test_outlet_filter_is_a_sheet_select(client):
-    r = client.get("/?outlet=ynet")
-    assert '<select name="outlet">' in r.text and '<option value="ynet" selected>' in r.text
-    assert 'type="hidden" name="outlet"' not in r.text  # one field, so the form never sends outlet twice
-    assert 'class="tabbar"' not in r.text
+def test_several_outlets(client):
+    r = client.get("/?outlet=ynet&outlet=haaretz")
+    assert 'name="outlet" value="ynet" checked' in r.text and 'name="outlet" value="haaretz" checked' in r.text
+    assert 'data-clear="outlet" data-value="ynet"' in r.text and 'data-clear="outlet" data-value="haaretz"' in r.text
+    frag = client.get("/fragments/feed?outlet=ynet&outlet=haaretz").text
+    assert "כותרת מספר 0" in frag and "בתשלום" in frag
+    assert "בתשלום" not in client.get("/fragments/feed?outlet=ynet").text
+    assert len(client.get("/api/articles?outlet=ynet&outlet=haaretz").json()["items"]) == 8
+    assert client.get("/api/articles?" + "&".join(f"outlet=o{i}" for i in range(21))).status_code == 422
+
+
+def test_how_it_works_is_an_icon(client):
+    r = client.get("/")
+    assert 'href="/methodology" aria-label="איך זה עובד"' in r.text
+    assert ">איך זה עובד<" not in r.text
 
 
 def test_cards_open_the_drawer(client):

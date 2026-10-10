@@ -12,76 +12,65 @@
   <form id="filters" class="filters" hx-get="/fragments/feed" hx-target="#feed"
         hx-trigger="change, input changed delay:400ms from:#q">
     <input type="hidden" name="topic" value="{{ filters.topic or '' }}">
-    {% set nf = [filters.outlet, filters.leaning, filters.type] | select | list | length %}
-    <div class="filter-row">
-      <label class="search">
-        <span class="visually-hidden">חיפוש בכותרות</span>
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" type="search" name="q" value="{{ filters.q or '' }}" placeholder="חיפוש בכותרות…" autocomplete="off" maxlength="80" enterkeyhint="search">
-        <kbd class="kbd" aria-hidden="true">/</kbd>
-      </label>
-      <fieldset class="segmented">
-        <legend class="visually-hidden">אילו כתבות להציג</legend>
-        <label><input type="radio" name="analyzed" value="0" {% if not filters.analyzed %}checked{% endif %}><span>הכול</span></label>
-        <label><input type="radio" name="analyzed" value="1" {% if filters.analyzed %}checked{% endif %}><span>נותחו</span></label>
-      </fieldset>
-      <span class="filter-anchor">
-        <button type="button" class="filter-btn" data-action="filters" aria-controls="filter-sheet" aria-expanded="false">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-          <span>סינון</span>
-          <span class="badge" data-filter-count {% if not nf %}hidden{% endif %}>{{ nf }}</span>
-        </button>
-        <span class="sheet-backdrop" data-action="close-filters" hidden></span>
-        <div class="filter-sheet" id="filter-sheet" role="group" aria-label="סינון כתבות">
-          <div class="sheet-head">
-            <h2>סינון כתבות</h2>
-            <button type="button" class="icon-btn" data-action="close-filters" aria-label="סגירה">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-            </button>
-          </div>
-          <label class="select"><span>מקור</span>
-            <select name="outlet">
-              <option value="">כל המקורות</option>
-              {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
-            </select>
-          </label>
-          <label class="select"><span>נטייה כללית</span>
-            <select name="leaning">
-              <option value="">כל הנטיות</option>
-              {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-            </select>
-          </label>
-          <label class="select"><span>סוג כתבה</span>
-            <select name="type">
-              <option value="">כל הסוגים</option>
-              {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-            </select>
-          </label>
-          <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
-          <div class="sheet-foot">
-            <a class="btn ghost" href="/">ניקוי הכול</a>
-            <button type="button" class="btn" data-action="close-filters">הצגת התוצאות</button>
-          </div>
-        </div>
-      </span>
-    </div>
-
-    <div class="outlets" role="group" aria-label="מקורות">
-      <button type="button" class="pill{% if not filters.outlet %} active{% endif %}" data-filter="outlet" data-value="" aria-pressed="{{ 'false' if filters.outlet else 'true' }}">כל המקורות</button>
-      {% for id, name in outlets.items() %}
-      <button type="button" class="pill{% if filters.outlet == id %} active{% endif %}" data-filter="outlet" data-value="{{ id }}" aria-pressed="{{ 'true' if filters.outlet == id else 'false' }}">
-        {{ outlet_badge(id, name, 20) }}<span>{{ name }}</span>
-        {% if overview.outlets.get(id) %}<span class="pill-count" title="כתבות ב־24 השעות האחרונות">{{ overview.outlets.get(id) }}</span>{% endif %}
+    {% set sel = filters.outlet or [] %}
+    {% set nf = sel | length + ([filters.leaning, filters.type, filters.analyzed] | select | list | length) %}
+    <label class="search">
+      <span class="visually-hidden">חיפוש בכותרות</span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" name="q" value="{{ filters.q or '' }}" placeholder="חיפוש בכותרות…" autocomplete="off" maxlength="80" enterkeyhint="search">
+      <kbd class="kbd" aria-hidden="true">/</kbd>
+    </label>
+    <span class="filter-anchor">
+      <button type="button" class="filter-btn" data-action="filters" aria-controls="filter-sheet" aria-expanded="false">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        <span>סינון</span>
+        <span class="badge" data-filter-count {% if not nf %}hidden{% endif %}>{{ nf }}</span>
       </button>
-      {% endfor %}
-    </div>
+      <span class="sheet-backdrop" data-action="close-filters" hidden></span>
+      <div class="filter-sheet" id="filter-sheet" role="group" aria-label="סינון כתבות">
+        <div class="sheet-head">
+          <h2>סינון כתבות</h2>
+          <button type="button" class="icon-btn" data-action="close-filters" aria-label="סגירה">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <fieldset class="checks">
+          <legend>מקורות <span>אפשר לבחור כמה</span></legend>
+          {% for id, name in outlets.items() %}
+          <label class="check"><input type="checkbox" name="outlet" value="{{ id }}" {% if id in sel %}checked{% endif %}><span>{{ outlet_badge(id, name, 20) }}{{ name }}</span></label>
+          {% endfor %}
+        </fieldset>
+        <label class="select"><span>נטייה כללית</span>
+          <select name="leaning">
+            <option value="">כל הנטיות</option>
+            {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="select"><span>סוג כתבה</span>
+          <select name="type">
+            <option value="">כל הסוגים</option>
+            {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="switch">
+          <input type="checkbox" name="analyzed" value="1" role="switch" {% if filters.analyzed %}checked{% endif %}>
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>רק כתבות שנותחו</span>
+        </label>
+        <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
+        <div class="sheet-foot">
+          <a class="btn ghost" href="/">ניקוי הכול</a>
+          <button type="button" class="btn" data-action="close-filters">הצגת התוצאות</button>
+        </div>
+      </div>
+    </span>
   </form>
   {{ active_chips(filters, outlets) }}
 </div>
 
 <p class="disclaimer">
   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-  <span>הדירוגים נוצרים אוטומטית על ידי מודל בינה מלאכותית. הם סובייקטיביים, עלולים לטעות, ואינם קביעה עובדתית. <a href="/methodology">איך זה עובד</a></span>
+  <span>הדירוגים נוצרים אוטומטית על ידי מודל בינה מלאכותית. הם סובייקטיביים, עלולים לטעות, ואינם קביעה עובדתית.</span>
 </p>
 
 {% if overview.last_collected %}
@@ -155,10 +144,5 @@
     </div>
   </section>
 
-  <section class="box cta">
-    <h2>הדירוג הוא נקודת פתיחה, לא פסק דין</h2>
-    <p>מודל שפה מקומי מדרג כל כתבה לפי הכותרת והטקסט בלבד, בלי לדעת מי פרסם אותה ומי כתב אותה.</p>
-    <a class="btn light" href="/methodology">איך זה עובד</a>
-  </section>
 </aside>
 {% endblock %}
