@@ -81,3 +81,11 @@ def test_article_page(client):
     assert "<h1>כותרת מספר 0</h1>" in r.text and "למה הדירוג הזה" in r.text
     assert 'data-copy="/article/1"' in r.text
     assert client.get("/article/999").status_code == 404
+
+
+def test_front_page_lead_section_only_when_unfiltered(client):
+    r = client.get("/")
+    assert 'class="lead-section"' in r.text and 'href="/article/1"' in r.text
+    assert SECRET not in r.text
+    assert 'class="lead-section"' not in client.get("/?topic=politics").text
+    assert 'class="section-link active" data-filter="topic" data-value="politics"' in client.get("/?topic=politics").text

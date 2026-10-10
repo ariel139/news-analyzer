@@ -1,3 +1,4 @@
+{% from "_macros.html" import lean, outlet_badge %}
 {% set ns = namespace(day=after_day) %}
 {% for a in items %}
 {% set day = a.published_local.date() %}
@@ -10,9 +11,7 @@
 <li>
   <details class="item" hx-get="/fragments/article/{{ a.id }}" hx-trigger="toggle once" hx-target="find .panel">
     <summary>
-      {% set logo = logo_url(a.outlet) %}
-      {% if logo %}<img class="logo" src="{{ logo }}" alt="" width="42" height="42" loading="lazy">
-      {% else %}<span class="monogram" aria-hidden="true">{{ a.outlet_name[:1] }}</span>{% endif %}
+      {{ outlet_badge(a.outlet, a.outlet_name) }}
       <span class="item-body">
         <span class="meta">
           <span class="outlet">{{ a.outlet_name }}</span>
@@ -22,16 +21,7 @@
           {% elif a.status == 'paywalled' %}<span class="tag muted">בתשלום</span>{% endif %}
         </span>
         <span class="title">{{ a.title }}</span>
-        {% if ov and ov.applicable %}
-        <span class="lean">
-          <span>נטייה:</span>
-          <span class="lean-dots conf-{{ ov.confidence }}" dir="ltr" role="img"
-                aria-label="{{ ov.title }}: {{ ov.score }} בסולם מ־{{ ov.min }} ({{ ov.low }}) עד {{ ov.max }} ({{ ov.high }})">
-            {% for t in range(ov.min, ov.max + 1) %}<i{% if t == ov.score %} class="on"{% endif %}></i>{% endfor %}
-          </span>
-          <span class="lean-label">{{ labels.LEANINGS[ov.score | string] }}</span>
-        </span>
-        {% endif %}
+        {% if ov and ov.applicable %}{{ lean(ov) }}{% endif %}
       </span>
       <span class="chev" aria-hidden="true">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>

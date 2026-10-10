@@ -1,3 +1,4 @@
+{% from "_macros.html" import scale %}
 {% set an = a.analysis %}
 {% if an %}
   <section class="summary-box">
@@ -15,17 +16,7 @@
         {% if ax.applicable %}<span class="conf">ודאות {{ ax.confidence_he }}</span>{% endif %}
       </div>
       {% if ax.applicable %}
-      {% set zero = marker_pct(0 if ax.min < 0 else ax.min, ax.min, ax.max) %}
-      {% set pos = marker_pct(ax.score, ax.min, ax.max) %}
-      <div class="scale{% if ax.min >= 0 %} seq{% endif %}" dir="ltr" role="img"
-           aria-label="{{ ax.title }}: {{ ax.score }} בסולם מ־{{ ax.min }} ({{ ax.low }}) עד {{ ax.max }} ({{ ax.high }})">
-        <div class="track">
-          <span class="fill" style="left: {{ [zero, pos] | min }}%; width: {{ ((pos - zero) | abs) | round(1) }}%"></span>
-          {% for t in range(ax.min, ax.max + 1) %}<span class="tick" style="left: {{ marker_pct(t, ax.min, ax.max) }}%"></span>{% endfor %}
-          <span class="marker conf-{{ ax.confidence }}" style="left: {{ pos }}%"></span>
-        </div>
-        <div class="ends"><span>{{ ax.low }}</span><span>{{ ax.high }}</span></div>
-      </div>
+      {{ scale(ax) }}
       {% else %}
       <p class="muted small">לא רלוונטי לכתבה זו</p>
       {% endif %}

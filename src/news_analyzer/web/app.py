@@ -118,6 +118,18 @@ def reltime(dt: datetime) -> str:
 WEEKDAYS = ("שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת", "ראשון")  # date.weekday() order
 
 
+MONTHS = ("ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר",
+          "נובמבר", "דצמבר")
+# Topics offered in the section bar. Sports/culture/other are mostly skipped by the analyzer.
+NAV_TOPICS = [k for k in labels.TOPICS if k not in ("sports", "culture", "other")]
+FEATURED_COUNT = 5
+
+
+def today_he() -> str:
+    d = datetime.now(ZoneInfo(get_settings().timezone)).date()
+    return f"יום {WEEKDAYS[d.weekday()]}, {d.day} ב{MONTHS[d.month - 1]} {d.year}"
+
+
 def daylabel(d: date) -> str:
     """Feed section heading: 'היום', 'אתמול', or 'יום חמישי, 8.10'."""
     today = datetime.now(ZoneInfo(get_settings().timezone)).date()
@@ -142,7 +154,8 @@ def logo_url(outlet_id: str) -> str | None:
 
 templates.env.filters["reltime"] = reltime
 templates.env.filters["daylabel"] = daylabel
-templates.env.globals.update(labels=labels, marker_pct=marker_pct, logo_url=logo_url)
+templates.env.globals.update(labels=labels, marker_pct=marker_pct, logo_url=logo_url, today_he=today_he,
+                             nav_topics=NAV_TOPICS)
 
 
 def _feed_ctx(request: Request, f: Filters, conn: sqlite3.Connection, after_day: str | None = None) -> dict:
@@ -172,6 +185,10 @@ def page_index(request: Request, f: Filters = Depends(), conn: sqlite3.Connectio
     ctx["stats"] = {"total": sum(by_status.values()), "analyzed": by_status.get("done", 0),
                     "outlets": len(ctx["outlets"])}
     ctx["overview"] = _overview(conn)
+    if not ctx["filters"] and f.offset == 0:  # lead section only on the unfiltered front page
+        s, reg = get_settings(), get_outlets()
+        ctx["featured"] = [article_dict(r, reg, s.timezone)
+                           for r in db.query_feed(conn, analyzed_only=True, limit=FEATURED_COUNT)]
     return templates.TemplateResponse(request, "index.html", ctx)
 
 

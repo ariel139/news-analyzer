@@ -1,5 +1,13 @@
-// Small page behaviours: copy-link buttons, sidebar shortcuts into the filter form, back-to-top.
+// Small page behaviours: copy-link buttons, filter shortcuts (section bar, outlet row, sidebar), back-to-top.
 (function () {
+  function syncShortcuts(name, value) {
+    document.querySelectorAll('[data-filter="' + name + '"]').forEach(function (b) {
+      var on = b.dataset.value === value;
+      b.classList.toggle("active", on);
+      if (b.tagName === "BUTTON") b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
   document.addEventListener("click", function (e) {
     var copy = e.target.closest("[data-copy]");
     if (copy) {
@@ -15,32 +23,24 @@
       return;
     }
 
-    // Sidebar topic chips / outlet rows set the matching <select> and let htmx reload the feed.
+    // Shortcuts set the matching form field and let htmx reload the feed. Off the front page
+    // (no #filters form) the section-bar links simply navigate.
     var btn = e.target.closest("[data-filter]");
-    if (btn) {
-      var form = document.getElementById("filters");
-      var select = form && form.querySelector('select[name="' + btn.dataset.filter + '"]');
-      if (!select) return;
-      var value = select.value === btn.dataset.value ? "" : btn.dataset.value;
-      select.value = value;
-      document.querySelectorAll('[data-filter="' + btn.dataset.filter + '"]').forEach(function (b) {
-        var on = b.dataset.value === value;
-        b.classList.toggle("active", on);
-        b.setAttribute("aria-pressed", on ? "true" : "false");
-      });
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-      form.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    var form = document.getElementById("filters");
+    if (!btn || !form) return;
+    var field = form.elements[btn.dataset.filter];
+    if (!field) return;
+    e.preventDefault();
+    var value = btn.dataset.value;
+    if (btn.tagName === "BUTTON" && value && field.value === value) value = "";  // second click clears
+    field.value = value;
+    syncShortcuts(btn.dataset.filter, value);
+    field.dispatchEvent(new Event("change", { bubbles: true }));
+    document.getElementById("latest").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
-  // Keep sidebar highlights in sync when the user changes a <select> directly.
   document.addEventListener("change", function (e) {
-    if (!e.target.matches || !e.target.matches("#filters select")) return;
-    document.querySelectorAll('[data-filter="' + e.target.name + '"]').forEach(function (b) {
-      var on = b.dataset.value === e.target.value;
-      b.classList.toggle("active", on);
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-    });
+    if (e.target.matches && e.target.matches("#filters select")) syncShortcuts(e.target.name, e.target.value);
   });
 
   var top = document.getElementById("to-top");
