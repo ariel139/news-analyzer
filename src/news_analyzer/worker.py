@@ -17,7 +17,11 @@ def cycle() -> None:
     try:
         pipeline.run_collection(settings, registry)
     except Exception:
-        log.exception("collection cycle failed")
+        log.exception("collection failed")
+    try:
+        pipeline.run_analysis(settings, registry)
+    except Exception:
+        log.exception("analysis failed")
 
 
 def run_worker() -> None:
