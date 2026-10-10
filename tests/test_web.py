@@ -115,8 +115,7 @@ def test_how_it_works_is_an_icon(client):
 def test_cards_open_the_drawer(client):
     r = client.get("/")
     assert 'id="drawer"' in r.text and 'id="drawer-body"' in r.text
-    assert '<div id="drawer-body" class="drawer-body" aria-live="polite"></div>
-</aside>' in r.text  # nesting intact
+    assert '<div id="drawer-body" class="drawer-body" aria-live="polite"></div>\n</aside>' in r.text  # nesting intact
     assert 'href="/article/1" hx-get="/fragments/article/1" hx-target="#drawer-body"' in r.text
     frag = client.get("/fragments/article/1").text
     assert 'id="drawer-title"' in frag and "כותרת מספר 0" in frag and 'href="/article/1"' in frag
