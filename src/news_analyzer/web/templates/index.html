@@ -1,33 +1,55 @@
 {% extends "base.html" %}
 {% block content %}
+<section class="hero">
+  <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>מתעדכן כל 15 דקות</p>
+  <h1>החדשות, <em>והמסגור</em> שמאחוריהן.</h1>
+  <p class="lead">כותרות מכלי התקשורת בישראל, ולצד כל כתבה ניתוח אוטומטי של האופן שבו היא ממסגרת סוגיות פוליטיות: ביטחון, דת ומדינה, כלכלה וטון.</p>
+  {% if stats %}
+  <ul class="stats" aria-label="נתונים">
+    <li><strong>{{ "{:,}".format(stats.total) }}</strong> כתבות</li>
+    <li><strong>{{ "{:,}".format(stats.analyzed) }}</strong> נותחו</li>
+    <li><strong>{{ stats.outlets }}</strong> מקורות</li>
+  </ul>
+  {% endif %}
+</section>
+
+<p class="disclaimer">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+  <span>הדירוגים נוצרים אוטומטית על ידי מודל בינה מלאכותית. הם סובייקטיביים, עלולים לטעות, ואינם קביעה עובדתית. <a href="/methodology">איך זה עובד</a></span>
+</p>
+
 <form class="filters" hx-get="/fragments/feed" hx-target="#feed" hx-trigger="change" hx-push-url="false"
       hx-on::after-request="history.replaceState(null, '', '/?' + new URLSearchParams(new FormData(this)).toString())">
   <label>מקור
     <select name="outlet">
-      <option value="">הכול</option>
+      <option value="">כל המקורות</option>
       {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
     </select>
   </label>
   <label>נושא
     <select name="topic">
-      <option value="">הכול</option>
+      <option value="">כל הנושאים</option>
       {% for k, v in labels.TOPICS.items() %}<option value="{{ k }}" {% if filters.topic == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
     </select>
   </label>
   <label>נטייה כללית
     <select name="leaning">
-      <option value="">הכול</option>
+      <option value="">כל הנטיות</option>
       {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
     </select>
   </label>
   <label>סוג
     <select name="type">
-      <option value="">הכול</option>
+      <option value="">כל הסוגים</option>
       {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
     </select>
   </label>
-  <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
+  <div class="filters-foot">
+    <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
+    <a class="reset" href="/">ניקוי סינון</a>
+  </div>
 </form>
+
 <ul id="feed" class="feed">
   {% include "_feed_items.html" %}
 </ul>

@@ -130,6 +130,9 @@ def _feed_ctx(request: Request, f: Filters, conn: sqlite3.Connection) -> dict:
 def page_index(request: Request, f: Filters = Depends(), conn: sqlite3.Connection = Depends(get_conn)):
     ctx = _feed_ctx(request, f, conn)
     ctx["outlets"] = {o.id: o.name for o in get_outlets().enabled}
+    by_status = db.stats(conn)["by_status"]
+    ctx["stats"] = {"total": sum(by_status.values()), "analyzed": by_status.get("done", 0),
+                    "outlets": len(ctx["outlets"])}
     return templates.TemplateResponse(request, "index.html", ctx)
 
 

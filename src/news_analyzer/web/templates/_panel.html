@@ -1,15 +1,18 @@
 {% set an = a.analysis %}
 {% if an %}
-  <p class="badges">
-    <span class="tag">נושא: {{ an.topic_he }}</span>
-  </p>
+  <section class="summary-box">
+    <h3>בקצרה</h3>
+    <p>{{ an.summary }}</p>
+  </section>
 
-  <section class="axes" aria-label="דירוגים">
+  <section aria-label="דירוגים">
+    <h3>דירוגים</h3>
+    <div class="axes">
     {% for ax in an.axes %}
     <div class="axis{% if not ax.applicable %} na{% endif %}">
       <div class="axis-head">
         <span class="axis-title">{{ ax.title }}</span>
-        {% if ax.applicable %}<span class="conf">רמת ודאות: {{ ax.confidence_he }}</span>{% endif %}
+        {% if ax.applicable %}<span class="conf">ודאות {{ ax.confidence_he }}</span>{% endif %}
       </div>
       {% if ax.applicable %}
       <div class="scale" dir="ltr" role="img"
@@ -25,22 +28,18 @@
       {% endif %}
     </div>
     {% endfor %}
+    </div>
   </section>
 
   <section>
     <h3>למה הדירוג הזה</h3>
-    <p>{{ an.explanation }}</p>
+    <p class="explain">{{ an.explanation }}</p>
     {% if an.evidence %}
     <ul class="evidence">{% for e in an.evidence %}<li><q>{{ e }}</q></li>{% endfor %}</ul>
     {% endif %}
   </section>
-
-  <section>
-    <h3>תקציר</h3>
-    <p>{{ an.summary }}</p>
-  </section>
 {% else %}
-  <p class="muted">{{ a.status_he }}</p>
+  <section class="summary-box muted"><p>{{ a.status_he }}</p></section>
 {% endif %}
 
 {% if profile and profile.shown %}
@@ -51,8 +50,10 @@
 </section>
 {% endif %}
 
-<p class="source">
-  {% if a.author %}<span class="muted">מאת {{ a.author }} · </span>{% endif %}
-  <a href="{{ a.url }}" target="_blank" rel="noopener noreferrer">לכתבה המלאה ב{{ a.outlet_name }} ↗</a>
-</p>
-{% if an %}<p class="muted small">נותח אוטומטית ע״י {{ an.model }}</p>{% endif %}
+<div class="panel-foot">
+  <span class="byline">{% if a.author %}מאת <strong>{{ a.author }}</strong> · {% endif %}{{ a.outlet_name }}</span>
+  <a class="btn" href="{{ a.url }}" target="_blank" rel="noopener noreferrer">לכתבה המלאה ב{{ a.outlet_name }}
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+  </a>
+  {% if an %}<p class="model-note">נותח אוטומטית ע״י {{ an.model }}</p>{% endif %}
+</div>

@@ -1,24 +1,46 @@
 {% for a in items %}
+{% set an = a.analysis %}
+{% set ov = (an.axes | selectattr('key', 'equalto', 'overall') | first) if an else none %}
 <li>
   <details class="item" hx-get="/fragments/article/{{ a.id }}" hx-trigger="toggle once" hx-target="find .panel">
     <summary>
-      <span class="title">{{ a.title }}</span>
-      <span class="meta">
-        <span>{{ a.outlet_name }}</span>
-        <time datetime="{{ a.published_at }}" title="{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}">{{ a.published_local | reltime }}</time>
-        {% if a.analysis %}<span class="tag">{{ a.analysis.article_type_he }}</span>
-        {% elif a.status == 'paywalled' %}<span class="tag muted">בתשלום</span>{% endif %}
+      <span class="monogram" aria-hidden="true">{{ a.outlet_name[:1] }}</span>
+      <span class="item-body">
+        <span class="meta">
+          <span class="outlet">{{ a.outlet_name }}</span>
+          <span class="dot" aria-hidden="true"></span>
+          <time datetime="{{ a.published_at }}" title="{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}">{{ a.published_local | reltime }}</time>
+          {% if an %}<span class="tag">{{ an.article_type_he }}</span><span class="tag">{{ an.topic_he }}</span>
+          {% elif a.status == 'paywalled' %}<span class="tag muted">בתשלום</span>{% endif %}
+        </span>
+        <span class="title">{{ a.title }}</span>
+        {% if ov and ov.applicable %}
+        <span class="lean">
+          <span>נטייה:</span>
+          <span class="lean-dots conf-{{ ov.confidence }}" dir="ltr" role="img"
+                aria-label="{{ ov.title }}: {{ ov.score }} בסולם מ־{{ ov.min }} ({{ ov.low }}) עד {{ ov.max }} ({{ ov.high }})">
+            {% for t in range(ov.min, ov.max + 1) %}<i{% if t == ov.score %} class="on"{% endif %}></i>{% endfor %}
+          </span>
+          <span class="lean-label">{{ labels.LEANINGS[ov.score | string] }}</span>
+        </span>
+        {% endif %}
+      </span>
+      <span class="chev" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </span>
     </summary>
-    <div class="panel" aria-live="polite"><p class="muted">טוען…</p></div>
+    <div class="panel" aria-live="polite">
+      <div class="skeleton" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="visually-hidden">טוען…</p>
+    </div>
   </details>
 </li>
 {% else %}
-<li class="empty">לא נמצאו כתבות.</li>
+<li class="empty"><strong>לא נמצאו כתבות</strong>נסו לשנות או לנקות את הסינון.</li>
 {% endfor %}
 {% if next_offset is not none %}
 <li class="more">
-  <button hx-get="/fragments/feed?{% for k, v in filters.items() %}{{ k }}={{ v | urlencode }}&{% endfor %}offset={{ next_offset }}"
-          hx-target="closest li" hx-swap="outerHTML">טען עוד</button>
+  <button class="btn ghost" hx-get="/fragments/feed?{% for k, v in filters.items() %}{{ k }}={{ v | urlencode }}&{% endfor %}offset={{ next_offset }}"
+          hx-target="closest li" hx-swap="outerHTML">טען עוד כתבות</button>
 </li>
 {% endif %}
