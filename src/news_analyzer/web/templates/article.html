@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ a.title }} · מנתח חדשות{% endblock %}
+{% block content %}
+<div class="narrow">
+  <nav class="crumbs" aria-label="פירורי לחם"><a href="/">עדכונים</a> <span aria-hidden="true">/</span> <span>{{ a.outlet_name }}</span></nav>
+  <article class="article-page">
+    <header class="article-head">
+      <div class="meta">
+        {% if logo_url(a.outlet) %}<img class="logo sm" src="{{ logo_url(a.outlet) }}" alt="" width="28" height="28">{% endif %}
+        <span class="outlet">{{ a.outlet_name }}</span>
+        <span class="dot" aria-hidden="true"></span>
+        <time datetime="{{ a.published_at }}">{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}</time>
+        {% if a.analysis %}<span class="tag">{{ a.analysis.article_type_he }}</span><span class="tag">{{ a.analysis.topic_he }}</span>{% endif %}
+      </div>
+      <h1>{{ a.title }}</h1>
+    </header>
+    <div class="panel page-panel">
+      {% include "_panel.html" %}
+    </div>
+  </article>
+  <p class="disclaimer">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+    <span>הדירוג נוצר אוטומטית על ידי מודל בינה מלאכותית, הוא סובייקטיבי ועלול לטעות. <a href="/methodology">איך זה עובד</a></span>
+  </p>
+</div>
+{% endblock %}

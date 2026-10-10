@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero">
-  <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span>מתעדכן כל 15 דקות</p>
+  <p class="eyebrow">
+    <span class="live-dot" aria-hidden="true"></span>
+    {% if overview.last_collected_dt %}עודכן {{ overview.last_collected_dt | reltime }} · {% endif %}מתעדכן כל 15 דקות
+  </p>
   <h1>החדשות, <em>והמסגור</em> שמאחוריהן.</h1>
   <p class="lead">כותרות מכלי התקשורת בישראל, ולצד כל כתבה ניתוח אוטומטי של האופן שבו היא ממסגרת סוגיות פוליטיות: ביטחון, דת ומדינה, כלכלה וטון.</p>
   {% if stats %}
@@ -18,44 +21,111 @@
   <span>הדירוגים נוצרים אוטומטית על ידי מודל בינה מלאכותית. הם סובייקטיביים, עלולים לטעות, ואינם קביעה עובדתית. <a href="/methodology">איך זה עובד</a></span>
 </p>
 
-<form class="filters" hx-get="/fragments/feed" hx-target="#feed" hx-trigger="change" hx-push-url="false"
-      hx-on::after-request="history.replaceState(null, '', '/?' + new URLSearchParams(new FormData(this)).toString())">
-  <label>מקור
-    <select name="outlet">
-      <option value="">כל המקורות</option>
-      {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
-    </select>
-  </label>
-  <label>נושא
-    <select name="topic">
-      <option value="">כל הנושאים</option>
-      {% for k, v in labels.TOPICS.items() %}<option value="{{ k }}" {% if filters.topic == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-    </select>
-  </label>
-  <label>נטייה כללית
-    <select name="leaning">
-      <option value="">כל הנטיות</option>
-      {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-    </select>
-  </label>
-  <label>סוג
-    <select name="type">
-      <option value="">כל הסוגים</option>
-      {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-    </select>
-  </label>
-  <div class="filters-foot">
-    <label class="switch">
-      <input type="checkbox" name="analyzed" value="1" role="switch" {% if filters.analyzed %}checked{% endif %}>
-      <span class="switch-track" aria-hidden="true"></span>
-      <span>רק כתבות שדורגו</span>
-    </label>
-    <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
-    <a class="reset" href="/">ניקוי סינון</a>
-  </div>
-</form>
+<div class="layout">
+  <div class="main-col">
+    <form id="filters" class="filters" hx-get="/fragments/feed" hx-target="#feed"
+          hx-trigger="change, input changed delay:400ms from:#q" hx-push-url="false"
+          hx-on::after-request="if (event.detail.target.id === 'feed') history.replaceState(null, '', '/?' + new URLSearchParams(new FormData(this)).toString())">
+      <label class="search">
+        <span class="visually-hidden">חיפוש בכותרות</span>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" name="q" value="{{ filters.q or '' }}" placeholder="חיפוש בכותרות…" autocomplete="off" maxlength="80">
+      </label>
+      <label>מקור
+        <select name="outlet">
+          <option value="">כל המקורות</option>
+          {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>נושא
+        <select name="topic">
+          <option value="">כל הנושאים</option>
+          {% for k, v in labels.TOPICS.items() %}<option value="{{ k }}" {% if filters.topic == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>נטייה כללית
+        <select name="leaning">
+          <option value="">כל הנטיות</option>
+          {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>סוג
+        <select name="type">
+          <option value="">כל הסוגים</option>
+          {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="filters-foot">
+        <label class="switch">
+          <input type="checkbox" name="analyzed" value="1" role="switch" {% if filters.analyzed %}checked{% endif %}>
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>רק כתבות שדורגו</span>
+        </label>
+        <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
+        <a class="reset" href="/">ניקוי סינון</a>
+      </div>
+    </form>
 
-<ul id="feed" class="feed">
-  {% include "_feed_items.html" %}
-</ul>
+    {% if overview.last_collected %}
+    <div id="new-banner" class="new-banner" aria-live="polite"
+         hx-get="/fragments/new?since={{ overview.last_collected | urlencode }}" hx-trigger="every 120s"></div>
+    {% endif %}
+
+    <ul id="feed" class="feed">
+      {% include "_feed_items.html" %}
+    </ul>
+  </div>
+
+  <aside class="sidebar" aria-label="סקירה">
+    {% if overview.topics %}
+    <section class="side-card">
+      <h2>נושאים השבוע</h2>
+      <p class="side-sub">כתבות שנותחו ב־7 הימים האחרונים</p>
+      <div class="chips">
+        {% for k, n in overview.topics.items() %}
+        <button type="button" class="chip{% if filters.topic == k %} active{% endif %}" data-filter="topic" data-value="{{ k }}" aria-pressed="{{ 'true' if filters.topic == k else 'false' }}">
+          {{ labels.TOPICS.get(k, k) }}<span class="count">{{ n }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="side-card side-desktop">
+      <h2>מקורות</h2>
+      <p class="side-sub">כתבות ב־24 השעות האחרונות</p>
+      <ul class="outlet-rows">
+        {% for id, name in outlets.items() %}
+        <li>
+          <button type="button" class="outlet-row{% if filters.outlet == id %} active{% endif %}" data-filter="outlet" data-value="{{ id }}" aria-pressed="{{ 'true' if filters.outlet == id else 'false' }}">
+            {% if logo_url(id) %}<img src="{{ logo_url(id) }}" alt="" width="24" height="24" loading="lazy">{% else %}<span class="monogram sm" aria-hidden="true">{{ name[:1] }}</span>{% endif %}
+            <span class="name">{{ name }}</span>
+            <span class="count">{{ overview.outlets.get(id, 0) }}</span>
+          </button>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="side-card side-desktop">
+      <h2>איך לקרוא את הדירוג</h2>
+      <div class="legend">
+        <div class="legend-scale ax-overall" dir="ltr" aria-hidden="true">
+          <span class="lg-track"></span><span class="lg-fill"></span><span class="lg-dot"></span>
+        </div>
+        <ul class="legend-list">
+          <li><span class="lg-sample solid" aria-hidden="true"></span>ודאות גבוהה</li>
+          <li><span class="lg-sample light" aria-hidden="true"></span>ודאות בינונית</li>
+          <li><span class="lg-sample dashed" aria-hidden="true"></span>ודאות נמוכה</li>
+        </ul>
+        <p>הפס הצבוע נמתח מהאמצע אל הדירוג: ארוך יותר פירושו נטייה חזקה יותר. לכל ציר צבע משלו, והצבע אינו מסמן צד.</p>
+        <a href="/methodology">המתודולוגיה המלאה ←</a>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<button type="button" class="to-top" id="to-top" aria-label="חזרה לראש העמוד" hidden>
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+</button>
 {% endblock %}

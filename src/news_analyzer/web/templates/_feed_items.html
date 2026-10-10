@@ -1,4 +1,10 @@
+{% set ns = namespace(day=after_day) %}
 {% for a in items %}
+{% set day = a.published_local.date() %}
+{% if day.isoformat() != ns.day %}
+<li class="day-head"><h2>{{ day | daylabel }}</h2></li>
+{% set ns.day = day.isoformat() %}
+{% endif %}
 {% set an = a.analysis %}
 {% set ov = (an.axes | selectattr('key', 'equalto', 'overall') | first) if an else none %}
 <li>
@@ -42,7 +48,7 @@
 {% endfor %}
 {% if next_offset is not none %}
 <li class="more">
-  <button class="btn ghost" hx-get="/fragments/feed?{% for k, v in filters.items() %}{{ k }}={{ v | urlencode }}&{% endfor %}offset={{ next_offset }}"
+  <button class="btn ghost" hx-get="/fragments/feed?{% for k, v in filters.items() %}{{ k }}={{ v | urlencode }}&{% endfor %}after_day={{ last_day }}&offset={{ next_offset }}"
           hx-target="closest li" hx-swap="outerHTML">טען עוד כתבות</button>
 </li>
 {% endif %}
