@@ -1,0 +1,24 @@
+{% for a in items %}
+<li>
+  <details class="item" hx-get="/fragments/article/{{ a.id }}" hx-trigger="toggle once" hx-target="find .panel">
+    <summary>
+      <span class="title">{{ a.title }}</span>
+      <span class="meta">
+        <span>{{ a.outlet_name }}</span>
+        <time datetime="{{ a.published_at }}" title="{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}">{{ a.published_local | reltime }}</time>
+        {% if a.analysis %}<span class="tag">{{ a.analysis.article_type_he }}</span>
+        {% elif a.status == 'paywalled' %}<span class="tag muted">בתשלום</span>{% endif %}
+      </span>
+    </summary>
+    <div class="panel" aria-live="polite"><p class="muted">טוען…</p></div>
+  </details>
+</li>
+{% else %}
+<li class="empty">לא נמצאו כתבות.</li>
+{% endfor %}
+{% if next_offset is not none %}
+<li class="more">
+  <button hx-get="/fragments/feed?{% for k, v in filters.items() %}{{ k }}={{ v | urlencode }}&{% endfor %}offset={{ next_offset }}"
+          hx-target="closest li" hx-swap="outerHTML">טען עוד</button>
+</li>
+{% endif %}

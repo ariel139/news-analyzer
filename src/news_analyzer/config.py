@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     llm_disable_thinking: bool = True  # Qwen3 "thinking" mode is slow on CPU and not needed here
 
     # Analysis budget - keep small on CPU-only machines
-    analyze_max_per_run: int = 5
+    analyze_max_per_run: int = 3
     analyze_time_budget_sec: int = 600
     analyze_max_age_hours: int = 24  # don't spend CPU on stale backlog
     max_analysis_chars: int = 3000  # article text is truncated to this before prompting

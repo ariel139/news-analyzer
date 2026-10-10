@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="filters" hx-get="/fragments/feed" hx-target="#feed" hx-trigger="change" hx-push-url="false"
+      hx-on::after-request="history.replaceState(null, '', '/?' + new URLSearchParams(new FormData(this)).toString())">
+  <label>מקור
+    <select name="outlet">
+      <option value="">הכול</option>
+      {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>נושא
+    <select name="topic">
+      <option value="">הכול</option>
+      {% for k, v in labels.TOPICS.items() %}<option value="{{ k }}" {% if filters.topic == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>נטייה כללית
+    <select name="leaning">
+      <option value="">הכול</option>
+      {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>סוג
+    <select name="type">
+      <option value="">הכול</option>
+      {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select>
+  </label>
+  <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
+</form>
+<ul id="feed" class="feed">
+  {% include "_feed_items.html" %}
+</ul>
+{% endblock %}

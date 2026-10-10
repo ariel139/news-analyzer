@@ -36,7 +36,8 @@ def parse_feed(content: bytes, outlet: Outlet, *, now: datetime | None = None,
         link, title = e.get("link"), strip_html(e.get("title", ""))
         if not link or not title:
             continue
-        published = _published(e) or now
+        # some outlets pre-date scheduled items into the future; clamp so they don't pin the feed top
+        published = min(_published(e) or now, now)
         if max_age_hours is not None and now - published > timedelta(hours=max_age_hours):
             continue
         url = normalize_url(link)

@@ -80,3 +80,77 @@ def api_article(article_id: int, conn: sqlite3.Connection = Depends(get_conn)):
         raise HTTPException(404, "not found")
     s, reg = get_settings(), get_outlets()
     return {**article_dict(row, reg, s.timezone), "author_profile": _profile(conn, row["author"])}
+
+
+# ------------------------------------------------------------------------- HTML (HTMX)
+from datetime import datetime, timezone  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from fastapi import Request  # noqa: E402
+from fastapi.responses import HTMLResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.templating import Jinja2Templates  # noqa: E402
+
+HERE = Path(__file__).parent
+templates = Jinja2Templates(directory=HERE / "templates")
+app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+
+
+def reltime(dt: datetime) -> str:
+    """'לפני 5 דק׳' for recent items, otherwise a local date."""
+    minutes = int((datetime.now(timezone.utc) - dt).total_seconds() // 60)
+    if minutes < 1:
+        return "עכשיו"
+    if minutes < 60:
+        return f"לפני {minutes} דק׳"
+    if minutes < 24 * 60:
+        h = minutes // 60
+        return "לפני שעה" if h == 1 else f"לפני {h} שעות"
+    return dt.strftime("%d.%m %H:%M")
+
+
+def marker_pct(score: int, lo: int, hi: int) -> float:
+    return round((score - lo) / (hi - lo) * 100, 1)
+
+
+templates.env.filters["reltime"] = reltime
+templates.env.globals.update(labels=labels, marker_pct=marker_pct)
+
+
+def _feed_ctx(request: Request, f: Filters, conn: sqlite3.Connection) -> dict:
+    s, reg = get_settings(), get_outlets()
+    items = [article_dict(r, reg, s.timezone) for r in f.query(conn)]
+    params = {k: v for k, v in {"outlet": f.outlet, "topic": f.topic, "leaning": f.leaning,
+                                "type": f.type}.items() if v}
+    return {"request": request, "items": items, "filters": params,
+            "next_offset": f.offset + PAGE_SIZE if len(items) == PAGE_SIZE else None}
+
+
+@app.get("/", response_class=HTMLResponse)
+def page_index(request: Request, f: Filters = Depends(), conn: sqlite3.Connection = Depends(get_conn)):
+    ctx = _feed_ctx(request, f, conn)
+    ctx["outlets"] = {o.id: o.name for o in get_outlets().enabled}
+    return templates.TemplateResponse(request, "index.html", ctx)
+
+
+@app.get("/fragments/feed", response_class=HTMLResponse)
+def frag_feed(request: Request, f: Filters = Depends(), conn: sqlite3.Connection = Depends(get_conn)):
+    return templates.TemplateResponse(request, "_feed_items.html", _feed_ctx(request, f, conn))
+
+
+@app.get("/fragments/article/{article_id}", response_class=HTMLResponse)
+def frag_article(request: Request, article_id: int, conn: sqlite3.Connection = Depends(get_conn)):
+    row = db.get_article(conn, article_id)
+    if row is None:
+        raise HTTPException(404, "not found")
+    s, reg = get_settings(), get_outlets()
+    return templates.TemplateResponse(request, "_panel.html", {
+        "a": article_dict(row, reg, s.timezone), "profile": _profile(conn, row["author"])})
+
+
+@app.get("/methodology", response_class=HTMLResponse)
+def page_methodology(request: Request):
+    s = get_settings()
+    return templates.TemplateResponse(request, "methodology.html", {
+        "model": s.llm_model, "min_author": s.author_min_articles,
+        "outlets": get_outlets().outlets, "retention": s.text_retention_days})

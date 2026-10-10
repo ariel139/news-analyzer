@@ -32,6 +32,12 @@ def test_parse_feed_fields_and_filters():
     assert items[1].published_at == datetime(2026, 10, 10, 8, 0, tzinfo=timezone.utc)  # +0300 -> UTC
 
 
+def test_parse_feed_clamps_future_dates():
+    early = datetime(2026, 10, 10, 6, 0, tzinfo=timezone.utc)  # before the items' pubDate
+    items = parse_feed((FIX / "rss_basic.xml").read_bytes(), OUTLET, now=early, max_age_hours=48)
+    assert all(i.published_at <= early for i in items)
+
+
 def test_parse_feed_premium_flag():
     outlet = Outlet(id="paper", name="עיתון")
     items = parse_feed((FIX / "rss_premium_flag.xml").read_bytes(), outlet, now=NOW, max_age_hours=48)
