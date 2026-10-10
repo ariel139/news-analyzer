@@ -11,9 +11,9 @@
 #
 # Feeds verified on 2026-10-10.
 outlets:
-  - { id: ynet,     name: "ynet",          feeds: ["https://www.ynet.co.il/Integration/StoryRss2.xml"] }
+  - { id: ynet,     name: "ynet",          feeds: ["https://www.ynet.co.il/Integration/StoryRss2.xml", "https://www.ynet.co.il/Integration/StoryRss194.xml"] }
   - { id: walla,    name: "וואלה",          feeds: ["https://rss.walla.co.il/feed/1", "https://rss.walla.co.il/feed/3"] }
-  - { id: maariv,   name: "מעריב",          feeds: ["https://www.maariv.co.il/Rss/RssChadashot"] }
+  - { id: maariv,   name: "מעריב",          feeds: ["https://www.maariv.co.il/Rss/RssChadashot", "https://www.maariv.co.il/Rss/RssFeedsOpinions"] }
   - { id: israelhayom, name: "ישראל היום",  feeds: ["https://www.israelhayom.co.il/rss.xml"] }
   - { id: haaretz,  name: "הארץ",           feeds: ["https://www.haaretz.co.il/srv/htz---all-articles"], paywall: [".premium"] }
   - { id: n12,      name: "N12",           feeds: ["https://rcs.mako.co.il/rss/news-military.xml", "https://rcs.mako.co.il/rss/news-israel.xml", "https://rcs.mako.co.il/rss/news-law.xml"] }
@@ -33,6 +33,10 @@ skip_analysis_url_patterns:
   - "/horoscope"
   - "/tv-"
   - "/vod"
+  - "/culture"
+  - "/lifestyle"
+  - "/travel"
+  - "/gossip"
 
 # Bylines that are desks/agencies rather than people - excluded from author profiles.
 non_person_authors:

@@ -77,6 +77,26 @@ def cmd_llm_check(args) -> None:
     print(f"OK: Ollama at {settings.ollama_url}, model {settings.llm_model} installed. All models: {names}")
 
 
+def cmd_eval_export(args) -> None:
+    from news_analyzer import evaluation
+
+    evaluation.export(get_settings(), get_outlets(), n=args.n, overwrite=args.overwrite)
+
+
+def cmd_eval_run(args) -> None:
+    from news_analyzer import evaluation
+
+    settings = get_settings()
+    evaluation.run(settings, args.model)
+    evaluation.print_report(evaluation.score(args.model or settings.llm_model))
+
+
+def cmd_eval_score(args) -> None:
+    from news_analyzer import evaluation
+
+    evaluation.print_report(evaluation.score(args.model or get_settings().llm_model))
+
+
 def cmd_web(args) -> None:
     import uvicorn
 
@@ -111,6 +131,16 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("purge", help="delete stored article text past retention").set_defaults(func=cmd_purge)
     sub.add_parser("worker", help="run the scheduler (collect + analyze every N minutes)").set_defaults(
         func=cmd_worker)
+    e = sub.add_parser("eval-export", help="pick articles for hand labeling -> eval/data/labels.csv")
+    e.add_argument("--n", type=int, default=30)
+    e.add_argument("--overwrite", action="store_true")
+    e.set_defaults(func=cmd_eval_export)
+    for name, fn, hlp in (("eval-run", cmd_eval_run, "predict labeled articles (resumable) and score"),
+                          ("eval-score", cmd_eval_score, "score existing predictions against labels")):
+        e = sub.add_parser(name, help=hlp)
+        e.add_argument("--model", default=None, help="Ollama model (default: NA_LLM_MODEL)")
+        e.set_defaults(func=fn)
+
     w = sub.add_parser("web", help="run the website/API")
     w.add_argument("--host", default="127.0.0.1")
     w.add_argument("--port", type=int, default=8000)
