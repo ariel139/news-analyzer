@@ -1,211 +1,164 @@
 {% extends "base.html" %}
-{% from "_macros.html" import scale, lean, outlet_badge %}
+{% from "_macros.html" import lean, outlet_badge, active_chips %}
+{% block shell_class %}{% endblock %}
 {% block content %}
 
-<section class="stories" aria-label="סינון לפי מקור">
-  <button type="button" class="story{% if not filters.outlet %} active{% endif %}" data-filter="outlet" data-value="" aria-pressed="{{ 'false' if filters.outlet else 'true' }}">
-    <span class="story-ring"><span class="story-all" aria-hidden="true">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>
-    </span></span>
-    <span class="story-name">כל המקורות</span>
-  </button>
-  {% for id, name in outlets.items() %}
-  <button type="button" class="story{% if filters.outlet == id %} active{% endif %}" data-filter="outlet" data-value="{{ id }}" aria-pressed="{{ 'true' if filters.outlet == id else 'false' }}">
-    <span class="story-ring">{{ outlet_badge(id, name, 52) }}
-      {% if overview.outlets.get(id) %}<span class="story-count" title="כתבות ב־24 השעות האחרונות">{{ overview.outlets.get(id) }}</span>{% endif %}
-    </span>
-    <span class="story-name">{{ name }}</span>
-  </button>
-  {% endfor %}
-</section>
-
-{% if featured %}
-{% set lead_a = featured[0] %}
-{% set lead_an = lead_a.analysis %}
-<section class="lead-section" aria-labelledby="lead-title">
-  <div class="section-title">
-    <h2 id="lead-title">נותחו לאחרונה</h2>
-    <a href="/?analyzed=1">לכל הכתבות שדורגו ←</a>
+<div class="feed-head" id="latest">
+  <div class="feed-title">
+    <h1>עדכונים</h1>
+    <span class="live"><span class="live-dot" aria-hidden="true"></span>{% if overview.last_collected_dt %}עודכן {{ overview.last_collected_dt | reltime }}{% else %}מתעדכן כל 15 דקות{% endif %}</span>
   </div>
-  <div class="lead-grid">
-    <article class="lead-story">
-      <div class="meta">
-        {{ outlet_badge(lead_a.outlet, lead_a.outlet_name, 28) }}
-        <span class="outlet">{{ lead_a.outlet_name }}</span>
-        <span class="dot" aria-hidden="true"></span>
-        <time datetime="{{ lead_a.published_at }}">{{ lead_a.published_local | reltime }}</time>
-        <span class="tag">{{ lead_an.article_type_he }}</span><span class="tag">{{ lead_an.topic_he }}</span>
-      </div>
-      <h3><a href="/article/{{ lead_a.id }}">{{ lead_a.title }}</a></h3>
-      <p class="lead-summary">{{ lead_an.summary }}</p>
-      <div class="lead-axes">
-        {% for ax in lead_an.axes if ax.applicable %}
-        <div class="mini-axis ax-{{ ax.key }}">
-          <span class="mini-label">{{ ax.title }}</span>
-          {{ scale(ax, compact=true) }}
-        </div>
-        {% endfor %}
-      </div>
-      <div class="lead-actions">
-        <a class="btn" href="/article/{{ lead_a.id }}">לניתוח המלא</a>
-        <a class="btn ghost lead-secondary" href="{{ lead_a.url }}" target="_blank" rel="noopener noreferrer">לכתבה ב{{ lead_a.outlet_name }} ↗</a>
-      </div>
-    </article>
 
-    <ol class="lead-list">
-      {% for a in featured[1:] %}
-      {% set ov = a.analysis.axes | selectattr('key', 'equalto', 'overall') | first %}
-      <li>
-        <span class="lead-num" aria-hidden="true">{{ loop.index + 1 }}</span>
-        <div>
-          <div class="meta">
-            <span class="outlet">{{ a.outlet_name }}</span>
-            <span class="dot" aria-hidden="true"></span>
-            <time datetime="{{ a.published_at }}">{{ a.published_local | reltime }}</time>
-            <span class="tag">{{ a.analysis.topic_he }}</span>
+  <form id="filters" class="filters" hx-get="/fragments/feed" hx-target="#feed"
+        hx-trigger="change, input changed delay:400ms from:#q">
+    <input type="hidden" name="topic" value="{{ filters.topic or '' }}">
+    {% set nf = [filters.outlet, filters.leaning, filters.type] | select | list | length %}
+    <div class="filter-row">
+      <label class="search">
+        <span class="visually-hidden">חיפוש בכותרות</span>
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" name="q" value="{{ filters.q or '' }}" placeholder="חיפוש בכותרות…" autocomplete="off" maxlength="80" enterkeyhint="search">
+        <kbd class="kbd" aria-hidden="true">/</kbd>
+      </label>
+      <fieldset class="segmented">
+        <legend class="visually-hidden">אילו כתבות להציג</legend>
+        <label><input type="radio" name="analyzed" value="0" {% if not filters.analyzed %}checked{% endif %}><span>הכול</span></label>
+        <label><input type="radio" name="analyzed" value="1" {% if filters.analyzed %}checked{% endif %}><span>נותחו</span></label>
+      </fieldset>
+      <span class="filter-anchor">
+        <button type="button" class="filter-btn" data-action="filters" aria-controls="filter-sheet" aria-expanded="false">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          <span>סינון</span>
+          <span class="badge" data-filter-count {% if not nf %}hidden{% endif %}>{{ nf }}</span>
+        </button>
+        <span class="sheet-backdrop" data-action="close-filters" hidden></span>
+        <div class="filter-sheet" id="filter-sheet" role="group" aria-label="סינון כתבות">
+          <div class="sheet-head">
+            <h2>סינון כתבות</h2>
+            <button type="button" class="icon-btn" data-action="close-filters" aria-label="סגירה">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
           </div>
-          <h3><a href="/article/{{ a.id }}">{{ a.title }}</a></h3>
-          {% if ov.applicable %}{{ lean(ov) }}{% endif %}
+          <label class="select"><span>מקור</span>
+            <select name="outlet">
+              <option value="">כל המקורות</option>
+              {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="select"><span>נטייה כללית</span>
+            <select name="leaning">
+              <option value="">כל הנטיות</option>
+              {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="select"><span>סוג כתבה</span>
+            <select name="type">
+              <option value="">כל הסוגים</option>
+              {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
+            </select>
+          </label>
+          <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
+          <div class="sheet-foot">
+            <a class="btn ghost" href="/">ניקוי הכול</a>
+            <button type="button" class="btn" data-action="close-filters">הצגת התוצאות</button>
+          </div>
         </div>
-      </li>
+      </span>
+    </div>
+
+    <div class="outlets" role="group" aria-label="מקורות">
+      <button type="button" class="pill{% if not filters.outlet %} active{% endif %}" data-filter="outlet" data-value="" aria-pressed="{{ 'false' if filters.outlet else 'true' }}">כל המקורות</button>
+      {% for id, name in outlets.items() %}
+      <button type="button" class="pill{% if filters.outlet == id %} active{% endif %}" data-filter="outlet" data-value="{{ id }}" aria-pressed="{{ 'true' if filters.outlet == id else 'false' }}">
+        {{ outlet_badge(id, name, 20) }}<span>{{ name }}</span>
+        {% if overview.outlets.get(id) %}<span class="pill-count" title="כתבות ב־24 השעות האחרונות">{{ overview.outlets.get(id) }}</span>{% endif %}
+      </button>
       {% endfor %}
-    </ol>
-  </div>
-</section>
-{% endif %}
+    </div>
+  </form>
+  {{ active_chips(filters, outlets) }}
+</div>
 
 <p class="disclaimer">
   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
   <span>הדירוגים נוצרים אוטומטית על ידי מודל בינה מלאכותית. הם סובייקטיביים, עלולים לטעות, ואינם קביעה עובדתית. <a href="/methodology">איך זה עובד</a></span>
 </p>
 
-<div class="layout">
-  <div class="main-col">
-    <div class="section-title" id="latest">
-      <h2>כל העדכונים</h2>
-      <span class="section-meta"><span class="live-dot" aria-hidden="true"></span>{% if overview.last_collected_dt %}עודכן {{ overview.last_collected_dt | reltime }}{% else %}מתעדכן כל 15 דקות{% endif %}</span>
-    </div>
+{% if overview.last_collected %}
+<div id="new-banner" class="new-banner" aria-live="polite"
+     hx-get="/fragments/new?since={{ overview.last_collected | urlencode }}" hx-trigger="every 120s"></div>
+{% endif %}
 
-    <form id="filters" class="filters" hx-get="/fragments/feed" hx-target="#feed"
-          hx-trigger="change, input changed delay:400ms from:#q" hx-push-url="false"
-          hx-on::after-request="if (event.detail.target.id === 'feed') history.replaceState(null, '', '/?' + new URLSearchParams(new FormData(this)).toString())">
-      <input type="hidden" name="topic" value="{{ filters.topic or '' }}">
-      {% set nf = [filters.outlet, filters.leaning, filters.type, filters.analyzed] | select | list | length %}
-      <div class="search-row">
-        <label class="search">
-          <span class="visually-hidden">חיפוש בכותרות</span>
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input id="q" type="search" name="q" value="{{ filters.q or '' }}" placeholder="חיפוש בכותרות…" autocomplete="off" maxlength="80" enterkeyhint="search">
-        </label>
-        <button type="button" class="sheet-toggle" data-action="filters" aria-controls="filter-sheet" aria-expanded="false">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-          <span>סינון</span>
-          <span class="badge" data-filter-count {% if not nf %}hidden{% endif %}>{{ nf }}</span>
-        </button>
-      </div>
-      <div class="sheet-backdrop" data-action="close-filters" hidden></div>
-      <div class="filter-sheet" id="filter-sheet" aria-label="סינון">
-      <div class="sheet-head">
-        <h2>סינון כתבות</h2>
-        <button type="button" class="sheet-close" data-action="close-filters" aria-label="סגירה">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-        </button>
-      </div>
-      {# Phone-only control; on desktop it stays hidden and the outlet row above sets it. #}
-      <label class="select phone-only"><span class="sheet-label">מקור</span>
-        <select name="outlet">
-          <option value="">כל המקורות</option>
-          {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
-        </select>
-      </label>
-      <label class="select"><span class="sheet-label">נטייה כללית</span>
-        <select name="leaning">
-          <option value="">כל הנטיות</option>
-          {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-        </select>
-      </label>
-      <label class="select desk-only"><span class="sheet-label">סוג כתבה</span>
-        <select name="type">
-          <option value="">כל הסוגים</option>
-          {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
-        </select>
-      </label>
-      <div class="filters-foot">
-        <label class="switch">
-          <input type="checkbox" name="analyzed" value="1" role="switch" {% if filters.analyzed %}checked{% endif %}>
-          <span class="switch-track" aria-hidden="true"></span>
-          <span>רק כתבות שדורגו</span>
-        </label>
-        <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
-        <a class="reset" href="/">ניקוי סינון</a>
-      </div>
-      <button type="button" class="btn sheet-apply" data-action="close-filters">הצגת התוצאות</button>
-      </div>
-    </form>
-
-    {% if overview.last_collected %}
-    <div id="new-banner" class="new-banner" aria-live="polite"
-         hx-get="/fragments/new?since={{ overview.last_collected | urlencode }}" hx-trigger="every 120s"></div>
-    {% endif %}
-
-    <ul id="feed" class="feed">
-      {% include "_feed_items.html" %}
-    </ul>
-  </div>
-
-  <aside class="sidebar" aria-label="סקירה">
-    <section class="side-card numbers">
-      <h2>במספרים</h2>
-      <dl>
-        <div><dt>כתבות</dt><dd>{{ "{:,}".format(stats.total) }}</dd></div>
-        <div><dt>נותחו</dt><dd>{{ "{:,}".format(stats.analyzed) }}</dd></div>
-        <div><dt>מקורות</dt><dd>{{ stats.outlets }}</dd></div>
-      </dl>
-    </section>
-
-    {% if overview.topics %}
-    <section class="side-card topics-card">
-      <h2>נושאים השבוע</h2>
-      <p class="side-sub">כתבות שנותחו ב־7 הימים האחרונים</p>
-      <ul class="topic-rows">
-        {% set top = overview.topics.values() | max %}
-        {% for k, n in overview.topics.items() %}
-        <li>
-          <button type="button" class="topic-row{% if filters.topic == k %} active{% endif %}" data-filter="topic" data-value="{{ k }}" aria-pressed="{{ 'true' if filters.topic == k else 'false' }}">
-            <span class="name">{{ labels.TOPICS.get(k, k) }}</span>
-            <span class="bar" aria-hidden="true"><i style="width: {{ (n / top * 100) | round(1) }}%"></i></span>
-            <span class="count">{{ n }}</span>
-          </button>
-        </li>
-        {% endfor %}
-      </ul>
-    </section>
-    {% endif %}
-
-    <section class="side-card">
-      <h2>איך לקרוא את הדירוג</h2>
-      <div class="legend">
-        <div class="legend-scale ax-overall" dir="ltr" aria-hidden="true">
-          <span class="lg-track"></span><span class="lg-fill"></span><span class="lg-dot"></span>
-        </div>
-        <ul class="legend-list">
-          <li><span class="lg-sample solid" aria-hidden="true"></span>ודאות גבוהה</li>
-          <li><span class="lg-sample light" aria-hidden="true"></span>ודאות בינונית</li>
-          <li><span class="lg-sample dashed" aria-hidden="true"></span>ודאות נמוכה</li>
-        </ul>
-        <p>הפס הצבוע נמתח מהאמצע אל הדירוג: ארוך יותר פירושו נטייה חזקה יותר. לכל ציר צבע משלו, והצבע אינו מסמן צד.</p>
-      </div>
-    </section>
-
-    <section class="side-card cta">
-      <h2>הדירוג הוא נקודת פתיחה, לא פסק דין</h2>
-      <p>מודל שפה מקומי מדרג כל כתבה לפי הכותרת והטקסט בלבד, בלי לדעת מי פרסם אותה ומי כתב אותה.</p>
-      <a class="btn light" href="/methodology">איך זה עובד</a>
-    </section>
-  </aside>
-</div>
+<ul id="feed" class="feed">
+  {% include "_feed_items.html" %}
+</ul>
 
 <button type="button" class="to-top" id="to-top" aria-label="חזרה לראש העמוד" hidden>
   <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
 </button>
+
+<div class="drawer-backdrop" data-action="close-drawer" hidden></div>
+<aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-label="ניתוח הכתבה" inert>
+  <div class="drawer-bar">
+    <button type="button" class="icon-btn" data-action="close-drawer" aria-label="סגירה">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+  <div id="drawer-body" class="drawer-body" aria-live="polite"></div>
+</aside>
+{% endblock %}
+
+{% block end_rail %}
+<aside class="rail-end" aria-label="סקירה">
+  <section class="box numbers">
+    <h2>במספרים</h2>
+    <dl>
+      <div><dt>כתבות</dt><dd>{{ "{:,}".format(stats.total) }}</dd></div>
+      <div><dt>נותחו</dt><dd>{{ "{:,}".format(stats.analyzed) }}</dd></div>
+      <div><dt>מקורות</dt><dd>{{ stats.outlets }}</dd></div>
+    </dl>
+  </section>
+
+  {% if featured %}
+  <section class="box">
+    <div class="box-head">
+      <h2>נותחו לאחרונה</h2>
+      <a href="/?analyzed=1">לכולן</a>
+    </div>
+    <ol class="recent">
+      {% for a in featured %}
+      {% set ov = a.analysis.axes | selectattr('key', 'equalto', 'overall') | first %}
+      <li>
+        <a class="recent-link" href="/article/{{ a.id }}" hx-get="/fragments/article/{{ a.id }}" hx-target="#drawer-body" data-article="{{ a.id }}">
+          <span class="meta"><span class="outlet">{{ a.outlet_name }}</span><span class="dot" aria-hidden="true"></span><time datetime="{{ a.published_at }}">{{ a.published_local | reltime }}</time></span>
+          <span class="recent-title">{{ a.title }}</span>
+          {% if ov.applicable %}{{ lean(ov) }}{% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  <section class="box">
+    <h2>איך לקרוא את הדירוג</h2>
+    <div class="legend">
+      <div class="legend-scale ax-overall" dir="ltr" aria-hidden="true">
+        <span class="lg-track"></span><span class="lg-fill"></span><span class="lg-dot"></span>
+      </div>
+      <ul class="legend-list">
+        <li><span class="lg-sample solid" aria-hidden="true"></span>ודאות גבוהה</li>
+        <li><span class="lg-sample light" aria-hidden="true"></span>ודאות בינונית</li>
+        <li><span class="lg-sample dashed" aria-hidden="true"></span>ודאות נמוכה</li>
+      </ul>
+      <p>הפס הצבוע נמתח מהאמצע אל הדירוג: ארוך יותר פירושו נטייה חזקה יותר. לכל ציר צבע משלו, והצבע אינו מסמן צד.</p>
+    </div>
+  </section>
+
+  <section class="box cta">
+    <h2>הדירוג הוא נקודת פתיחה, לא פסק דין</h2>
+    <p>מודל שפה מקומי מדרג כל כתבה לפי הכותרת והטקסט בלבד, בלי לדעת מי פרסם אותה ומי כתב אותה.</p>
+    <a class="btn light" href="/methodology">איך זה עובד</a>
+  </section>
+</aside>
 {% endblock %}

@@ -18,7 +18,8 @@ def test_analyzed_only_filter(client):
     r = client.get("/fragments/feed?analyzed=1")
     assert "כותרת מספר 0" in r.text
     assert "כותרת מספר 6" not in r.text and "בתשלום" not in r.text  # pending and paywalled hidden
-    assert 'name="analyzed" value="1" role="switch" checked' in client.get("/?analyzed=1").text
+    assert 'name="analyzed" value="1" checked' in client.get("/?analyzed=1").text
+    assert "כותרת מספר 6" in client.get("/fragments/feed?analyzed=0").text  # the "all" segment
 
 
 def test_outlet_logo_on_card(client):
@@ -53,9 +54,10 @@ def test_headline_search(client):
     assert len(client.get("/api/articles?q=כותרת").json()["items"]) == 7
 
 
-def test_index_sidebar_day_heading_and_new_poll(client):
+def test_index_rails_day_heading_and_new_poll(client):
     r = client.get("/")
-    assert "נושאים השבוע" in r.text and 'data-filter="topic" data-value="politics"' in r.text
+    assert 'class="topics"' in r.text and 'data-filter="topic" data-value="politics"' in r.text
+    assert 'class="rail-end"' in r.text and "במספרים" in r.text
     assert '<h2>היום</h2>' in r.text
     assert 'hx-get="/fragments/new?since=' in r.text
 
@@ -83,12 +85,11 @@ def test_article_page(client):
     assert client.get("/article/999").status_code == 404
 
 
-def test_front_page_lead_section_only_when_unfiltered(client):
-    r = client.get("/")
-    assert 'class="lead-section"' in r.text and 'href="/article/1"' in r.text
+def test_recent_list_and_active_topic(client):
+    r = client.get("/?topic=politics")
+    assert "נותחו לאחרונה" in r.text and 'href="/article/1"' in r.text  # recent list shows on filtered views too
     assert SECRET not in r.text
-    assert 'class="lead-section"' not in client.get("/?topic=politics").text
-    assert 'class="section-link active" data-filter="topic" data-value="politics"' in client.get("/?topic=politics").text
+    assert 'class="topic-link active" data-filter="topic" data-value="politics"' in r.text
 
 
 def test_outlet_filter_is_a_sheet_select(client):
@@ -96,3 +97,21 @@ def test_outlet_filter_is_a_sheet_select(client):
     assert '<select name="outlet">' in r.text and '<option value="ynet" selected>' in r.text
     assert 'type="hidden" name="outlet"' not in r.text  # one field, so the form never sends outlet twice
     assert 'class="tabbar"' not in r.text
+
+
+def test_cards_open_the_drawer(client):
+    r = client.get("/")
+    assert 'id="drawer"' in r.text and 'id="drawer-body"' in r.text
+    assert 'href="/article/1" hx-get="/fragments/article/1" hx-target="#drawer-body"' in r.text
+    frag = client.get("/fragments/article/1").text
+    assert 'id="drawer-title"' in frag and "כותרת מספר 0" in frag and 'href="/article/1"' in frag
+    assert SECRET not in frag
+
+
+def test_active_filter_chips(client):
+    r = client.get("/?topic=politics&outlet=ynet&q=כותרת")
+    assert 'data-clear="topic"' in r.text and 'data-clear="outlet"' in r.text and 'data-clear="q"' in r.text
+    assert 'hx-swap-oob' not in r.text  # chips are swapped out-of-band only by the fragment
+    frag = client.get("/fragments/feed?leaning=-1").text
+    assert 'id="active-chips" class="chips" hx-swap-oob="true"' in frag and 'data-clear="leaning"' in frag
+    assert 'data-clear=' not in client.get("/fragments/feed").text

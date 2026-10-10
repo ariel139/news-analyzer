@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import outlet_badge %}
 {% block title %}{{ a.title }} · מנתח חדשות{% endblock %}
 {% block content %}
 <div class="narrow">
@@ -6,15 +7,15 @@
   <article class="article-page">
     <header class="article-head">
       <div class="meta">
-        {% if logo_url(a.outlet) %}<img class="logo sm" src="{{ logo_url(a.outlet) }}" alt="" width="28" height="28">{% endif %}
+        {{ outlet_badge(a.outlet, a.outlet_name, 28) }}
         <span class="outlet">{{ a.outlet_name }}</span>
         <span class="dot" aria-hidden="true"></span>
         <time datetime="{{ a.published_at }}">{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}</time>
-        {% if a.analysis %}<span class="tag">{{ a.analysis.article_type_he }}</span><span class="tag">{{ a.analysis.topic_he }}</span>{% endif %}
+        {% if a.analysis %}<span class="tag">{{ a.analysis.topic_he }}</span><span class="tag">{{ a.analysis.article_type_he }}</span>{% endif %}
       </div>
       <h1>{{ a.title }}</h1>
     </header>
-    <div class="panel page-panel">
+    <div class="panel">
       {% include "_panel.html" %}
     </div>
   </article>

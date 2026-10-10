@@ -1,0 +1,15 @@
+{% from "_macros.html" import outlet_badge %}
+<header class="article-head">
+  <div class="meta">
+    {{ outlet_badge(a.outlet, a.outlet_name, 28) }}
+    <span class="outlet">{{ a.outlet_name }}</span>
+    <span class="dot" aria-hidden="true"></span>
+    <time datetime="{{ a.published_at }}">{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}</time>
+    {% if a.analysis %}<span class="tag">{{ a.analysis.topic_he }}</span><span class="tag">{{ a.analysis.article_type_he }}</span>{% endif %}
+  </div>
+  <h2 id="drawer-title" class="article-title" tabindex="-1">{{ a.title }}</h2>
+  <a class="full-link" href="/article/{{ a.id }}">לעמוד הניתוח המלא</a>
+</header>
+<div class="panel">
+  {% include "_panel.html" %}
+</div>

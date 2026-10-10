@@ -122,7 +122,7 @@ MONTHS = ("ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יו�
           "נובמבר", "דצמבר")
 # Topics offered in the section bar. Sports/culture/other are mostly skipped by the analyzer.
 NAV_TOPICS = [k for k in labels.TOPICS if k not in ("sports", "culture", "other")]
-FEATURED_COUNT = 5
+FEATURED_COUNT = 5  # "recently analyzed" list in the end rail
 
 
 def today_he() -> str:
@@ -166,6 +166,7 @@ def _feed_ctx(request: Request, f: Filters, conn: sqlite3.Connection, after_day:
                                 "analyzed": "1" if f.analyzed else None, "q": f.q}.items() if v}
     last_day = items[-1]["published_local"].date().isoformat() if items else after_day
     return {"request": request, "items": items, "filters": params, "after_day": after_day,
+            "outlets": {o.id: o.name for o in reg.enabled},
             "last_day": last_day, "next_offset": f.offset + PAGE_SIZE if len(items) == PAGE_SIZE else None}
 
 
@@ -180,22 +181,22 @@ def _overview(conn: sqlite3.Connection) -> dict:
 @app.get("/", response_class=HTMLResponse)
 def page_index(request: Request, f: Filters = Depends(), conn: sqlite3.Connection = Depends(get_conn)):
     ctx = _feed_ctx(request, f, conn)
-    ctx["outlets"] = {o.id: o.name for o in get_outlets().enabled}
     by_status = db.stats(conn)["by_status"]
     ctx["stats"] = {"total": sum(by_status.values()), "analyzed": by_status.get("done", 0),
                     "outlets": len(ctx["outlets"])}
     ctx["overview"] = _overview(conn)
-    if not ctx["filters"] and f.offset == 0:  # lead section only on the unfiltered front page
-        s, reg = get_settings(), get_outlets()
-        ctx["featured"] = [article_dict(r, reg, s.timezone)
-                           for r in db.query_feed(conn, analyzed_only=True, limit=FEATURED_COUNT)]
+    s, reg = get_settings(), get_outlets()
+    ctx["featured"] = [article_dict(r, reg, s.timezone)
+                       for r in db.query_feed(conn, analyzed_only=True, limit=FEATURED_COUNT)]
     return templates.TemplateResponse(request, "index.html", ctx)
 
 
 @app.get("/fragments/feed", response_class=HTMLResponse)
 def frag_feed(request: Request, f: Filters = Depends(), conn: sqlite3.Connection = Depends(get_conn),
               after_day: str | None = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$")):
-    return templates.TemplateResponse(request, "_feed_items.html", _feed_ctx(request, f, conn, after_day))
+    # oob: the fragment also refreshes the active-filter chips above the feed.
+    return templates.TemplateResponse(request, "_feed_items.html",
+                                      {**_feed_ctx(request, f, conn, after_day), "oob": True})
 
 
 @app.get("/fragments/new", response_class=HTMLResponse)
@@ -216,7 +217,7 @@ def frag_article(request: Request, article_id: int, conn: sqlite3.Connection = D
     if row is None:
         raise HTTPException(404, "not found")
     s, reg = get_settings(), get_outlets()
-    return templates.TemplateResponse(request, "_panel.html", {
+    return templates.TemplateResponse(request, "_drawer.html", {
         "a": article_dict(row, reg, s.timezone), "profile": _profile(conn, row["author"])})
 
 
