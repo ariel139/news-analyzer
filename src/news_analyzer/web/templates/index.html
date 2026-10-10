@@ -90,8 +90,7 @@
           hx-trigger="change, input changed delay:400ms from:#q" hx-push-url="false"
           hx-on::after-request="if (event.detail.target.id === 'feed') history.replaceState(null, '', '/?' + new URLSearchParams(new FormData(this)).toString())">
       <input type="hidden" name="topic" value="{{ filters.topic or '' }}">
-      <input type="hidden" name="outlet" value="{{ filters.outlet or '' }}">
-      {% set nf = [filters.leaning, filters.type, filters.analyzed] | select | list | length %}
+      {% set nf = [filters.outlet, filters.leaning, filters.type, filters.analyzed] | select | list | length %}
       <div class="search-row">
         <label class="search">
           <span class="visually-hidden">חיפוש בכותרות</span>
@@ -112,13 +111,20 @@
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
       </div>
+      {# Phone-only control; on desktop it stays hidden and the outlet row above sets it. #}
+      <label class="select phone-only"><span class="sheet-label">מקור</span>
+        <select name="outlet">
+          <option value="">כל המקורות</option>
+          {% for id, name in outlets.items() %}<option value="{{ id }}" {% if filters.outlet == id %}selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+      </label>
       <label class="select"><span class="sheet-label">נטייה כללית</span>
         <select name="leaning">
           <option value="">כל הנטיות</option>
           {% for k, v in labels.LEANINGS.items() %}<option value="{{ k }}" {% if filters.leaning == k %}selected{% endif %}>{{ v }}</option>{% endfor %}
         </select>
       </label>
-      <label class="select"><span class="sheet-label">סוג כתבה</span>
+      <label class="select desk-only"><span class="sheet-label">סוג כתבה</span>
         <select name="type">
           <option value="">כל הסוגים</option>
           {% for k, v in labels.ARTICLE_TYPES.items() %}<option value="{{ k }}" {% if filters.type == k %}selected{% endif %}>{{ v }}</option>{% endfor %}

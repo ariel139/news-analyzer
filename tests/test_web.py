@@ -89,3 +89,10 @@ def test_front_page_lead_section_only_when_unfiltered(client):
     assert SECRET not in r.text
     assert 'class="lead-section"' not in client.get("/?topic=politics").text
     assert 'class="section-link active" data-filter="topic" data-value="politics"' in client.get("/?topic=politics").text
+
+
+def test_outlet_filter_is_a_sheet_select(client):
+    r = client.get("/?outlet=ynet")
+    assert '<select name="outlet">' in r.text and '<option value="ynet" selected>' in r.text
+    assert 'type="hidden" name="outlet"' not in r.text  # one field, so the form never sends outlet twice
+    assert 'class="tabbar"' not in r.text

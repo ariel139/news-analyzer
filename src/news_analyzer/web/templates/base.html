@@ -53,29 +53,6 @@
 
   <main class="wrap">{% block content %}{% endblock %}</main>
 
-  {% set nf = ([filters.leaning, filters.type, filters.analyzed] | select | list | length) if filters is defined else 0 %}
-  <nav class="tabbar" aria-label="ניווט מהיר">
-    <a href="/" data-action="home"{% if page == '/' %} aria-current="page"{% endif %}>
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z"/></svg>
-      <span>ראשי</span>
-    </a>
-    <a href="/#q" data-action="search">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <span>חיפוש</span>
-    </a>
-    <a href="/#filters" data-action="filters">
-      <span class="tab-icon">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-        <span class="badge" data-filter-count {% if not nf %}hidden{% endif %}>{{ nf }}</span>
-      </span>
-      <span>סינון</span>
-    </a>
-    <a href="/methodology"{% if page == '/methodology' %} aria-current="page"{% endif %}>
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-      <span>איך זה עובד</span>
-    </a>
-  </nav>
-
   <footer class="site-footer">
     <div class="wrap footer-grid">
       <div class="footer-brand">

@@ -633,10 +633,11 @@ svg.icon { width: 18px; height: 18px; flex: none; }
 .site-footer a { color: var(--footer-text); text-decoration: none; }
 .site-footer a:hover { color: #fff; text-decoration: underline; }
 
-/* ------------------------------------------------------------------ filter sheet + tab bar
+/* ------------------------------------------------------------------ filter sheet
    On desktop the sheet wrappers vanish (display: contents) and the controls sit in the card grid. */
 .search-row, .filter-sheet { display: contents; }
-.sheet-toggle, .sheet-head, .sheet-apply, .sheet-backdrop, .tabbar { display: none; }
+.sheet-toggle, .sheet-head, .sheet-apply, .sheet-backdrop { display: none; }
+.filters .phone-only { display: none; }
 .sheet-label {
   position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
@@ -646,47 +647,31 @@ svg.icon { width: 18px; height: 18px; flex: none; }
 }
 .badge[hidden] { display: none; }
 
-/* ------------------------------------------------------------------ phone */
+/* ------------------------------------------------------------------ phone
+   One job: the feed, with each story's overall leaning. Everything else (outlet row, lead section,
+   sidebar, footer) is desktop-only; outlet and leaning filters live in the sheet. */
 @media (max-width: 679px) {
-  body { font-size: 16px; padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  body { font-size: 16px; }
   body.sheet-open { overflow: hidden; }
+  .stories, .lead-section, .sidebar, .site-footer { display: none; }
 
-  /* header: just the wordmark and the theme toggle; the tab bar carries navigation */
+  /* header: wordmark, "how it works", theme toggle */
   .mast-top { padding-top: 10px; padding-bottom: 10px; }
   .wordmark-text { font-size: 1.5rem; }
-  .mast-tagline, .mast-link { display: none; }
+  .mast-tagline { display: none; }
+  .mast-link { padding: 6px 10px; font-size: .84rem; }
+  .theme-toggle { width: 36px; height: 36px; }
   .masthead { border-bottom-color: var(--line); }
   .section-link { padding: 12px 11px; font-size: .9rem; }
 
-  .stories { gap: 12px; padding: 14px 2px 2px; }
-  .story { width: 62px; gap: 6px; }
-  .story-ring { width: 56px; height: 56px; }
-  .story .logo, .story .monogram, .story-all { width: 46px; height: 46px; }
-  .story .logo { padding: 6px; }
-  .story-name { font-size: .72rem; }
-  .story-count { min-width: 20px; height: 19px; font-size: .62rem; }
-
-  .section-title { margin: 22px 0 12px; border-top-width: 2px; }
+  .disclaimer { font-size: .78rem; padding: 10px 12px; margin: 14px 0 0; }
+  .section-title { margin: 18px 0 10px; border-top-width: 2px; }
   .section-title h2 { font-size: 1.3rem; }
 
-  /* lead: headline, three-line summary, overall leaning, one button */
-  .lead-story { padding: 18px 16px; gap: 12px; box-shadow: none; }
-  .lead-story h3 { font-size: 1.45rem; }
-  .lead-summary {
-    font-size: .98rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
-  }
-  .lead-axes { padding: 12px; }
-  .lead-axes .mini-axis:not(.ax-overall) { display: none; }
-  .lead-secondary { display: none; }
-  .lead-actions .btn { flex: 1; justify-content: center; }
-  .lead-list li { gap: 12px; padding: 14px 0; }
-  .lead-num { font-size: 1.6rem; min-width: 20px; }
-  .lead-list h3 { font-size: 1.04rem; }
-
-  .disclaimer { font-size: .78rem; padding: 10px 12px; margin: 16px 0; }
-
-  /* filters: search + one "filter" button; the rest lives in a bottom sheet */
+  /* filters: search + one "filter" button; outlet, leaning and analyzed-only live in a bottom sheet */
   .filters { display: block; padding: 0; background: none; border: 0; }
+  .filters .phone-only { display: flex; }
+  .filters .desk-only, .filters .hint { display: none; }
   .search-row { display: flex; gap: 8px; }
   .search-row .search { flex: 1; }
   .filters .search input { font-size: 16px; min-height: 48px; background: var(--surface); border-color: var(--line); }
@@ -721,47 +706,28 @@ svg.icon { width: 18px; height: 18px; flex: none; }
   .sheet-label { position: static !important; width: auto; height: auto; clip: auto; font-size: .82rem; font-weight: 700; color: var(--muted); }
   .filters select { font-size: 16px; min-height: 50px; }
   .filter-sheet .filters-foot { padding: 0; gap: 10px; }
-  .filter-sheet .hint { order: 3; flex-basis: 100%; }
   .sheet-apply { display: flex; justify-content: center; width: 100%; min-height: 50px; font-size: 1rem; }
 
-  /* feed rows */
+  /* feed rows: logo, outlet + time, headline, overall leaning. No topic/type tags, no chevron. */
   .feed { border-radius: 12px; }
-  .item summary { padding: 14px 14px; gap: 12px; }
+  .item summary { grid-template-columns: auto minmax(0, 1fr); padding: 14px; gap: 12px; }
+  .chev { display: none; }
   .meta { font-size: .76rem; }
-  .tag-type { display: none; }
-  .chev { width: 28px; height: 28px; margin-top: 2px; }
+  .feed .meta .tag:not(.muted) { display: none; }
   .day-head h2 { padding: 8px 14px; }
+
+  /* opened row: summary, the axes that apply, why, and the link out */
   .panel { padding: 4px 14px 16px; }
+  .axis.na { display: none; }
+  .item .panel .evidence, .item .panel .author, .item .panel-foot .byline,
+  .item .panel-foot [data-copy], .item .panel-foot .model-note { display: none; }
+  .item .panel-foot { margin-top: 16px; padding-top: 0; border-top: 0; }
   .foot-actions { width: 100%; }
   .foot-actions .btn { flex: 1; justify-content: center; }
 
-  /* sidebar: topics live in the section bar, totals aren't needed on a phone */
-  .numbers, .topics-card { display: none; }
-  .sidebar { gap: 12px; }
-
-  .to-top { display: none !important; }
-  .site-footer { margin-top: 32px; }
-  .footer-grid { padding-top: 28px; padding-bottom: 28px; gap: 20px; }
+  .to-top { bottom: calc(16px + env(safe-area-inset-bottom)); left: 16px; }
   .crumbs { padding: 16px 0 10px; }
-
-  /* bottom tab bar */
-  .tabbar {
-    display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-    padding-bottom: env(safe-area-inset-bottom);
-    background: var(--bar-bg); border-top: 1px solid var(--line);
-    backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px);
-  }
-  .tabbar a {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    min-height: 60px; font-size: .68rem; font-weight: 600; color: var(--muted); text-decoration: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .tabbar a[aria-current="page"] { color: var(--text); }
-  .tabbar a[aria-current="page"] svg { stroke-width: 2.4; }
-  .tabbar a:active { background: var(--surface-2); }
-  .tabbar svg.icon { width: 22px; height: 22px; }
-  .tab-icon { position: relative; display: grid; }
-  .tab-icon .badge { position: absolute; top: -6px; left: -10px; min-width: 17px; height: 17px; font-size: .6rem; padding: 0 4px; }
+  main.wrap { padding-bottom: 32px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

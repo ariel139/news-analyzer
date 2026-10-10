@@ -1,4 +1,4 @@
-// Small page behaviours: copy-link buttons, filter shortcuts (section bar, outlet row, sidebar), back-to-top.
+// Small page behaviours: copy-link buttons, filter shortcuts (section bar, outlet row, sidebar), phone filter sheet, back-to-top.
 (function () {
   function syncShortcuts(name, value) {
     document.querySelectorAll('[data-filter="' + name + '"]').forEach(function (b) {
@@ -8,7 +8,7 @@
     });
   }
 
-  // ---- phone filter sheet + tab bar
+  // ---- phone filter sheet
   var sheet = document.getElementById("filter-sheet");
   var backdrop = document.querySelector(".sheet-backdrop");
 
@@ -34,25 +34,13 @@
     });
   }
 
-  function focusSearch() {
-    var q = document.getElementById("q");
-    if (!q) return false;
-    document.getElementById("latest").scrollIntoView({ behavior: "smooth", block: "start" });
-    q.focus({ preventScroll: true });
-    return true;
-  }
-
   document.addEventListener("click", function (e) {
     var act = e.target.closest("[data-action]");
     if (act) {
       var a = act.dataset.action;
       if (a === "close-filters") { setSheet(false); return; }
-      if (a === "filters" && sheet) { e.preventDefault(); setSheet(true); return; }
-      if (a === "search" && focusSearch()) { e.preventDefault(); return; }
-      if (a === "home" && location.pathname === "/" && sheet) {
-        e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); return;
-      }
-      return;  // off the front page these are plain links
+      if (a === "filters") setSheet(true);
+      return;
     }
 
     var copy = e.target.closest("[data-copy]");
@@ -92,9 +80,6 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && sheet && sheet.classList.contains("open")) setSheet(false);
   });
-  // Arriving from another page via the tab bar (/#q or /#filters).
-  if (location.hash === "#q") focusSearch();
-  if (location.hash === "#filters" && window.matchMedia("(max-width: 679px)").matches) setSheet(true);
 
   var top = document.getElementById("to-top");
   if (top) {
