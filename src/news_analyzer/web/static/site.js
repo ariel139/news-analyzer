@@ -8,7 +8,53 @@
     });
   }
 
+  // ---- phone filter sheet + tab bar
+  var sheet = document.getElementById("filter-sheet");
+  var backdrop = document.querySelector(".sheet-backdrop");
+
+  function setSheet(open) {
+    if (!sheet) return;
+    sheet.classList.toggle("open", open);
+    if (backdrop) backdrop.hidden = !open;
+    document.body.classList.toggle("sheet-open", open);
+    document.querySelectorAll('[aria-controls="filter-sheet"]').forEach(function (b) {
+      b.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    if (open) { var first = sheet.querySelector("select"); if (first) first.focus({ preventScroll: true }); }
+  }
+
+  function updateFilterCount() {
+    if (!sheet) return;
+    var n = 0;
+    sheet.querySelectorAll("select").forEach(function (s) { if (s.value) n++; });
+    sheet.querySelectorAll('input[type="checkbox"]').forEach(function (c) { if (c.checked) n++; });
+    document.querySelectorAll("[data-filter-count]").forEach(function (el) {
+      el.textContent = n;
+      el.hidden = n === 0;
+    });
+  }
+
+  function focusSearch() {
+    var q = document.getElementById("q");
+    if (!q) return false;
+    document.getElementById("latest").scrollIntoView({ behavior: "smooth", block: "start" });
+    q.focus({ preventScroll: true });
+    return true;
+  }
+
   document.addEventListener("click", function (e) {
+    var act = e.target.closest("[data-action]");
+    if (act) {
+      var a = act.dataset.action;
+      if (a === "close-filters") { setSheet(false); return; }
+      if (a === "filters" && sheet) { e.preventDefault(); setSheet(true); return; }
+      if (a === "search" && focusSearch()) { e.preventDefault(); return; }
+      if (a === "home" && location.pathname === "/" && sheet) {
+        e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); return;
+      }
+      return;  // off the front page these are plain links
+    }
+
     var copy = e.target.closest("[data-copy]");
     if (copy) {
       var url = location.origin + copy.getAttribute("data-copy");
@@ -41,7 +87,14 @@
 
   document.addEventListener("change", function (e) {
     if (e.target.matches && e.target.matches("#filters select")) syncShortcuts(e.target.name, e.target.value);
+    updateFilterCount();
   });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && sheet && sheet.classList.contains("open")) setSheet(false);
+  });
+  // Arriving from another page via the tab bar (/#q or /#filters).
+  if (location.hash === "#q") focusSearch();
+  if (location.hash === "#filters" && window.matchMedia("(max-width: 679px)").matches) setSheet(true);
 
   var top = document.getElementById("to-top");
   if (top) {

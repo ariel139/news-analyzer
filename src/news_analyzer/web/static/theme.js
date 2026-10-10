@@ -10,6 +10,8 @@
     btn.setAttribute("aria-pressed", dark ? "true" : "false");
     btn.setAttribute("aria-label", dark ? "מעבר למצב בהיר" : "מעבר למצב כהה");
     btn.title = btn.getAttribute("aria-label");
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = dark ? "#0f1114" : "#f6f4ef";  // phone browser chrome follows the theme
   }
 
   btn.addEventListener("click", function () {

@@ -17,7 +17,7 @@
           <span class="outlet">{{ a.outlet_name }}</span>
           <span class="dot" aria-hidden="true"></span>
           <time datetime="{{ a.published_at }}" title="{{ a.published_local.strftime('%d.%m.%Y %H:%M') }}">{{ a.published_local | reltime }}</time>
-          {% if an %}<span class="tag">{{ an.article_type_he }}</span><span class="tag">{{ an.topic_he }}</span>
+          {% if an %}<span class="tag tag-type">{{ an.article_type_he }}</span><span class="tag">{{ an.topic_he }}</span>
           {% elif a.status == 'paywalled' %}<span class="tag muted">בתשלום</span>{% endif %}
         </span>
         <span class="title">{{ a.title }}</span>
