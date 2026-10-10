@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import lean, outlet_badge, active_chips %}
+{% from "_macros.html" import outlet_badge, active_chips %}
 {% block shell_class %}{% endblock %}
 {% block content %}
 
@@ -104,28 +104,60 @@
     <dl>
       <div><dt>כתבות</dt><dd>{{ "{:,}".format(stats.total) }}</dd></div>
       <div><dt>נותחו</dt><dd>{{ "{:,}".format(stats.analyzed) }}</dd></div>
+      <div><dt>ב־24 שעות</dt><dd>{{ "{:,}".format(stats.last_24h) }}</dd></div>
+      <div><dt title="ממתינות לניתוח">בהמתנה</dt><dd>{{ "{:,}".format(stats.pending) }}</dd></div>
+      <div><dt>בתשלום</dt><dd>{{ "{:,}".format(stats.paywalled) }}</dd></div>
       <div><dt>מקורות</dt><dd>{{ stats.outlets }}</dd></div>
     </dl>
+    <div class="meter" role="img" aria-label="{{ stats.coverage }}% מהכתבות נותחו">
+      <span class="meter-bar"><i style="width: {{ stats.coverage }}%"></i></span>
+      <span class="meter-text"><strong>{{ stats.coverage }}%</strong> מהכתבות נותחו</span>
+    </div>
   </section>
 
-  {% if featured %}
+  {% set lb = breakdown.leaning %}
+  {% set n_lean = lb.values() | sum %}
+  {% if n_lean %}
   <section class="box">
-    <div class="box-head">
-      <h2>נותחו לאחרונה</h2>
-      <a href="/?analyzed=1">לכולן</a>
-    </div>
-    <ol class="recent">
-      {% for a in featured %}
-      {% set ov = a.analysis.axes | selectattr('key', 'equalto', 'overall') | first %}
-      <li>
-        <a class="recent-link" href="/article/{{ a.id }}" hx-get="/fragments/article/{{ a.id }}" hx-target="#drawer-body" data-article="{{ a.id }}">
-          <span class="meta"><span class="outlet">{{ a.outlet_name }}</span><span class="dot" aria-hidden="true"></span><time datetime="{{ a.published_at }}">{{ a.published_local | reltime }}</time></span>
-          <span class="recent-title">{{ a.title }}</span>
-          {% if ov.applicable %}{{ lean(ov) }}{% endif %}
-        </a>
+    <h2>נטייה כללית</h2>
+    <p class="box-sub">{{ n_lean }} כתבות שנותחו ב־7 הימים האחרונים. דירוג אוטומטי, לא קביעה.</p>
+    {% set top = lb.values() | max %}
+    <ol class="hist ax-overall" dir="ltr">
+      {% for score in range(-2, 3) %}{% set n = lb.get(score, 0) %}
+      <li title="{{ labels.LEANINGS[score | string] }}: {{ n }}" aria-label="{{ labels.LEANINGS[score | string] }}: {{ n }}">
+        <span class="hist-n">{{ n }}</span>
+        <span class="hist-col"><i style="height: {{ (n / top * 100) | round(1) }}%"></i></span>
       </li>
       {% endfor %}
     </ol>
+    <div class="ends" dir="ltr"><span>שמאל</span><span>מרכז</span><span>ימין</span></div>
+    {% if breakdown.not_political %}<p class="box-sub after">ועוד {{ breakdown.not_political }} כתבות לא רלוונטיות פוליטית</p>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if breakdown.types %}
+  <section class="box">
+    <h2>סוגי כתבות</h2>
+    <p class="box-sub">כתבות שנותחו ב־7 הימים האחרונים</p>
+    {% set top = breakdown.types.values() | max %}
+    <ul class="bars">
+      {% for k, n in breakdown.types.items() %}
+      <li><span class="name">{{ labels.ARTICLE_TYPES.get(k, k) }}</span><span class="bar" aria-hidden="true"><i style="width: {{ (n / top * 100) | round(1) }}%"></i></span><span class="count">{{ n }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  {% if overview.outlets %}
+  <section class="box">
+    <h2>כתבות לפי מקור</h2>
+    <p class="box-sub">נאספו ב־24 השעות האחרונות</p>
+    {% set top = overview.outlets.values() | max %}
+    <ul class="bars">
+      {% for id, n in overview.outlets.items() | sort(attribute='1', reverse=true) %}{% if id in outlets %}
+      <li><span class="name">{{ outlets[id] }}</span><span class="bar" aria-hidden="true"><i style="width: {{ (n / top * 100) | round(1) }}%"></i></span><span class="count">{{ n }}</span></li>
+      {% endif %}{% endfor %}
+    </ul>
   </section>
   {% endif %}
 

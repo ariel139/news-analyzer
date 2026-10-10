@@ -283,5 +283,18 @@ def feed_overview(conn: sqlite3.Connection, outlets_since: str, topics_since: st
     return {"outlets": outlets, "topics": topics, "last_collected": last}
 
 
+def analysis_breakdown(conn: sqlite3.Connection, since: str) -> dict:
+    """Aggregate counts for the end-rail stats: overall leaning and article type of articles analyzed
+    in the window. Whole-corpus aggregates only, never per outlet or author."""
+    base = "FROM analyses an JOIN articles a ON a.id = an.article_id WHERE a.published_at >= ?"
+    leaning = dict(conn.execute(
+        f"SELECT an.overall_score, COUNT(*) {base} AND an.overall_score IS NOT NULL GROUP BY an.overall_score",
+        (since,)).fetchall())
+    not_political = conn.execute(f"SELECT COUNT(*) {base} AND an.overall_score IS NULL", (since,)).fetchone()[0]
+    types = dict(conn.execute(
+        f"SELECT an.article_type, COUNT(*) {base} GROUP BY an.article_type ORDER BY COUNT(*) DESC", (since,)).fetchall())
+    return {"leaning": leaning, "not_political": not_political, "types": types}
+
+
 def count_collected_after(conn: sqlite3.Connection, since: str) -> int:
     return conn.execute("SELECT COUNT(*) FROM articles WHERE collected_at > ?", (since,)).fetchone()[0]

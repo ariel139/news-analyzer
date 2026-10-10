@@ -84,9 +84,11 @@ def test_article_page(client):
     assert client.get("/article/999").status_code == 404
 
 
-def test_recent_list_and_active_topic(client):
+def test_end_rail_stats_and_active_topic(client):
     r = client.get("/?topic=politics")
-    assert "נותחו לאחרונה" in r.text and 'href="/article/1"' in r.text  # recent list shows on filtered views too
+    assert "נותחו לאחרונה" not in r.text
+    assert 'title="שמאל־מרכז: 6"' in r.text  # leaning histogram: all 6 fixtures score -1
+    assert "דעה</span>" in r.text and "75% מהכתבות נותחו" in r.text  # 6 of 8 analyzed
     assert SECRET not in r.text
     assert 'class="topic-link active" data-filter="topic" data-value="politics"' in r.text
 

@@ -126,7 +126,6 @@ MONTHS = ("ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יו�
           "נובמבר", "דצמבר")
 # Topics offered in the section bar. Sports/culture/other are mostly skipped by the analyzer.
 NAV_TOPICS = [k for k in labels.TOPICS if k not in ("sports", "culture", "other")]
-FEATURED_COUNT = 5  # "recently analyzed" list in the end rail
 
 
 def today_he() -> str:
@@ -187,12 +186,14 @@ def _overview(conn: sqlite3.Connection) -> dict:
 def page_index(request: Request, f: Filters = Depends(), conn: sqlite3.Connection = Depends(get_conn)):
     ctx = _feed_ctx(request, f, conn)
     by_status = db.stats(conn)["by_status"]
-    ctx["stats"] = {"total": sum(by_status.values()), "analyzed": by_status.get("done", 0),
-                    "outlets": len(ctx["outlets"])}
     ctx["overview"] = _overview(conn)
-    s, reg = get_settings(), get_outlets()
-    ctx["featured"] = [article_dict(r, reg, s.timezone)
-                       for r in db.query_feed(conn, analyzed_only=True, limit=FEATURED_COUNT)]
+    total = sum(by_status.values())
+    ctx["stats"] = {"total": total, "analyzed": by_status.get("done", 0), "outlets": len(ctx["outlets"]),
+                    "pending": by_status.get("pending", 0), "paywalled": by_status.get("paywalled", 0),
+                    "last_24h": sum(ctx["overview"]["outlets"].values()),
+                    "coverage": round(by_status.get("done", 0) / total * 100) if total else 0}
+    week_ago = db.iso(datetime.now(timezone.utc) - timedelta(days=7))
+    ctx["breakdown"] = db.analysis_breakdown(conn, week_ago)
     return templates.TemplateResponse(request, "index.html", ctx)
 
 
