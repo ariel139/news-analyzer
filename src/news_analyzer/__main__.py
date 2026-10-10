@@ -32,7 +32,30 @@ def cmd_collect(args) -> None:
             print(f"{i.published_at:%m-%d %H:%M}  {i.outlet:12} {i.title[:70]}{flag}")
         print("\nper outlet:", dict(Counter(i.outlet for i in items)))
         return
-    raise SystemExit("storing requires the database stage; use --dry-run")
+    from news_analyzer import pipeline
+
+    pipeline.run_collection(settings, registry)
+
+
+def cmd_stats(args) -> None:
+    import json
+
+    from news_analyzer import db
+
+    with db.open_db(get_settings().db_path) as conn:
+        print(json.dumps(db.stats(conn), ensure_ascii=False, indent=2))
+
+
+def cmd_purge(args) -> None:
+    from news_analyzer import pipeline
+
+    pipeline.run_purge(get_settings())
+
+
+def cmd_worker(args) -> None:
+    from news_analyzer.worker import run_worker
+
+    run_worker()
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -40,9 +63,14 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("-v", "--verbose", action="store_true")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    c = sub.add_parser("collect", help="fetch feeds once")
+    c = sub.add_parser("collect", help="fetch feeds once and store new articles")
     c.add_argument("--dry-run", action="store_true", help="print what was found, don't store")
     c.set_defaults(func=cmd_collect)
+
+    sub.add_parser("stats", help="article counts by status/outlet").set_defaults(func=cmd_stats)
+    sub.add_parser("purge", help="delete stored article text past retention").set_defaults(func=cmd_purge)
+    sub.add_parser("worker", help="run the scheduler (collect + analyze every N minutes)").set_defaults(
+        func=cmd_worker)
 
     args = p.parse_args(argv)
     _setup_logging(args.verbose)
