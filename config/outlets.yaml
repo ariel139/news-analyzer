@@ -1,0 +1,47 @@
+# Israeli news outlets. Adding an outlet = adding one line.
+#
+# Fields:
+#   id        short stable key (stored in the DB)
+#   name      Hebrew display name
+#   feeds     RSS/Atom feed URLs (preferred)
+#   listing   fallback only when no feed exists: {url: <section page>, link_pattern: <regex for article URLs>}
+#   paywall   URL substrings that mark paid articles (never fetched or analyzed)
+#   enabled   false = skip entirely
+#   note      free text
+#
+# Feeds verified on 2026-10-10.
+outlets:
+  - { id: ynet,     name: "ynet",          feeds: ["https://www.ynet.co.il/Integration/StoryRss2.xml"] }
+  - { id: walla,    name: "וואלה",          feeds: ["https://rss.walla.co.il/feed/1", "https://rss.walla.co.il/feed/3"] }
+  - { id: maariv,   name: "מעריב",          feeds: ["https://www.maariv.co.il/Rss/RssChadashot"] }
+  - { id: israelhayom, name: "ישראל היום",  feeds: ["https://www.israelhayom.co.il/rss.xml"] }
+  - { id: haaretz,  name: "הארץ",           feeds: ["https://www.haaretz.co.il/srv/htz---all-articles"], paywall: [".premium"] }
+  - { id: n12,      name: "N12",           feeds: ["https://rcs.mako.co.il/rss/news-military.xml", "https://rcs.mako.co.il/rss/news-israel.xml", "https://rcs.mako.co.il/rss/news-law.xml"] }
+  - { id: globes,   name: "גלובס",          feeds: ["https://www.globes.co.il/webservice/rss/rssfeeder.asmx/FeederNode?iID=2"] }
+  - { id: kan,      name: "כאן חדשות",      feeds: [], enabled: false, note: "kan.org.il serves a Cloudflare bot challenge (even robots.txt) - not scraped by policy" }
+  - { id: c13,      name: "חדשות 13",       feeds: [], enabled: false, note: "13tv.co.il returns 403 Access Denied to automated clients - not scraped by policy" }
+
+# Articles whose URL contains one of these are listed but not sent to the LLM
+# (saves CPU on a slow machine; they rarely carry political framing).
+skip_analysis_url_patterns:
+  - "/sport"
+  - "sport."
+  - "/weather"
+  - "/food"
+  - "/celebs"
+  - "/entertainment"
+  - "/horoscope"
+  - "/tv-"
+  - "/vod"
+
+# Bylines that are desks/agencies rather than people - excluded from author profiles.
+non_person_authors:
+  - "ynet"
+  - "מערכת"
+  - "שירות"
+  - "סוכנויות"
+  - "וואלה"
+  - "חדשות"
+  - "ספורט"
+  - "N12"
+  - "דוברות"

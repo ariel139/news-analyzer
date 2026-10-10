@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>חדשות לדוגמה</title>
+  <item>
+    <title>הממשלה אישרה את התקציב בקריאה ראשונה</title>
+    <link>https://news.example.co.il/article/123?utm_source=rss&amp;utm_medium=feed#top</link>
+    <description><![CDATA[<div><img src="x.jpg"/></div>שרי הממשלה הצביעו הערב בעד הצעת התקציב, &quot;אחרי ויכוח ארוך&quot;.]]></description>
+    <author>ישראלה ישראלי</author>
+    <category>כלכלה</category>
+    <category>תקציב</category>
+    <pubDate>Sat, 10 Oct 2026 12:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>ידיעה ישנה</title>
+    <link>https://news.example.co.il/article/100</link>
+    <description>ישן</description>
+    <pubDate>Mon, 01 Jan 2024 08:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>טור דעה למנויים</title>
+    <link>https://news.example.co.il/opinions/.premium/555</link>
+    <description>רק למנויים</description>
+    <pubDate>Sat, 10 Oct 2026 11:00:00 +0300</pubDate>
+  </item>
+  <item>
+    <title></title>
+    <link>https://news.example.co.il/article/no-title</link>
+  </item>
+</channel>
+</rss>

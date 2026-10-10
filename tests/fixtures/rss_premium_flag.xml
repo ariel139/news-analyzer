@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>עיתון עם דגל פרימיום</title>
+  <item>
+    <title>כתבה חינמית</title>
+    <link>https://paper.example.co.il/news/article-1</link>
+    <ispremium>false</ispremium>
+    <pubDate>Sat, 10 Oct 2026 12:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>כתבה בתשלום</title>
+    <link>https://paper.example.co.il/news/article-2</link>
+    <ispremium>true</ispremium>
+    <pubDate>Sat, 10 Oct 2026 12:05:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>
