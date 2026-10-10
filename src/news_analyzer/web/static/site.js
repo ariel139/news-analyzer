@@ -1,4 +1,4 @@
-// Page behaviours: topic shortcuts in the rail, active-filter chips, filter popover/sheet,
+// Page behaviours: topic shortcuts in the rail, active-filter chips, filter popover/sheet, stats toggle,
 // the article drawer, copy-link buttons, "/" to search, back-to-top.
 (function () {
   var form = document.getElementById("filters");
@@ -131,6 +131,11 @@
       if (a === "close-filters") setSheet(false);
       else if (a === "filters") setSheet(!(sheet && sheet.classList.contains("open")));
       else if (a === "close-drawer") closeDrawer();
+      else if (a === "stats") {
+        var panel = document.getElementById(act.getAttribute("aria-controls"));
+        panel.hidden = !panel.hidden;
+        act.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
+      }
       return;
     }
 

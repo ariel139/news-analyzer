@@ -161,6 +161,16 @@ svg.icon { width: 18px; height: 18px; flex: none; }
   position: sticky; top: 0; max-height: 100vh; overflow-y: auto; scrollbar-width: thin;
   display: flex; flex-direction: column; gap: 14px; padding: 24px 0;
 }
+.stats-toggle {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 46px; padding: 0 16px;
+  font: inherit; font-size: .92rem; font-weight: 700; color: var(--text); cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; transition: border-color .2s;
+}
+.stats-toggle:hover { border-color: var(--line-strong); }
+.stats-toggle .chev { margin-inline-start: auto; transition: transform .25s var(--ease); }
+.stats-toggle[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.stats-panel { display: flex; flex-direction: column; gap: 14px; animation: rise .3s var(--ease) both; }
+.stats-panel[hidden] { display: none; }
 .box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
 .box h2 { font-size: 1rem; font-weight: 800; margin: 0 0 12px; }
 .box-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }

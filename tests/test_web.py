@@ -88,6 +88,8 @@ def test_end_rail_stats_and_active_topic(client):
     r = client.get("/?topic=politics")
     assert "נותחו לאחרונה" not in r.text
     assert 'title="שמאל־מרכז: 6"' in r.text  # leaning histogram: all 6 fixtures score -1
+    assert 'id="stats-panel" class="stats-panel" hidden' in r.text  # behind the "נתונים" button
+    assert 'data-action="stats" aria-expanded="false" aria-controls="stats-panel"' in r.text
     assert "דעה</span>" in r.text and "75% מהכתבות נותחו" in r.text  # 6 of 8 analyzed
     assert SECRET not in r.text
     assert 'class="topic-link active" data-filter="topic" data-value="politics"' in r.text
@@ -113,6 +115,8 @@ def test_how_it_works_is_an_icon(client):
 def test_cards_open_the_drawer(client):
     r = client.get("/")
     assert 'id="drawer"' in r.text and 'id="drawer-body"' in r.text
+    assert '<div id="drawer-body" class="drawer-body" aria-live="polite"></div>
+</aside>' in r.text  # nesting intact
     assert 'href="/article/1" hx-get="/fragments/article/1" hx-target="#drawer-body"' in r.text
     frag = client.get("/fragments/article/1").text
     assert 'id="drawer-title"' in frag and "כותרת מספר 0" in frag and 'href="/article/1"' in frag
