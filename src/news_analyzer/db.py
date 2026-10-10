@@ -228,8 +228,14 @@ ANALYSIS_COLS = ("an.article_type, an.topic, an.favored_side, an.security_score,
 
 def query_feed(conn: sqlite3.Connection, *, outlet: str | None = None, topic: str | None = None,
                leaning: str | None = None, article_type: str | None = None,
+               analyzed_only: bool = False, q: str | None = None,
                limit: int = 50, offset: int = 0) -> list[sqlite3.Row]:
     where, params = [], []
+    if q:
+        escaped = q.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+        where.append("a.title LIKE ? ESCAPE '!'"); params.append(f"%{escaped}%")
+    if analyzed_only:
+        where.append("an.article_id IS NOT NULL")
     if outlet:
         where.append("a.outlet = ?"); params.append(outlet)
     if topic:
@@ -264,3 +270,18 @@ def author_overall_scores(conn: sqlite3.Connection, author: str) -> list[int]:
         (author,),
     ).fetchall()
     return [r[0] for r in rows]
+
+
+def feed_overview(conn: sqlite3.Connection, outlets_since: str, topics_since: str) -> dict:
+    """Counts for the sidebar: articles per outlet and analyzed articles per topic, plus last collection time."""
+    outlets = dict(conn.execute(
+        "SELECT outlet, COUNT(*) FROM articles WHERE published_at >= ? GROUP BY outlet", (outlets_since,)).fetchall())
+    topics = dict(conn.execute(
+        """SELECT an.topic, COUNT(*) FROM analyses an JOIN articles a ON a.id = an.article_id
+           WHERE a.published_at >= ? GROUP BY an.topic ORDER BY COUNT(*) DESC""", (topics_since,)).fetchall())
+    last = conn.execute("SELECT MAX(collected_at) FROM articles").fetchone()[0]
+    return {"outlets": outlets, "topics": topics, "last_collected": last}
+
+
+def count_collected_after(conn: sqlite3.Connection, since: str) -> int:
+    return conn.execute("SELECT COUNT(*) FROM articles WHERE collected_at > ?", (since,)).fetchone()[0]

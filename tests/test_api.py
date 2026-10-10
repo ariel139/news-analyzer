@@ -16,6 +16,8 @@ def test_filters(client):
     assert len(client.get("/api/articles?leaning=2").json()["items"]) == 0
     assert len(client.get("/api/articles?type=opinion&topic=politics").json()["items"]) == 6
     assert client.get("/api/articles?leaning=7").status_code == 422
+    analyzed = client.get("/api/articles?analyzed=1").json()["items"]
+    assert len(analyzed) == 6 and all(a["analysis"] for a in analyzed)
 
 
 def test_article_detail_and_author_profile(client):
