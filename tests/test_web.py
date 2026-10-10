@@ -14,6 +14,19 @@ def test_feed_fragment_filters(client):
     assert "בתשלום" in r.text and "כותרת מספר" not in r.text
 
 
+def test_analyzed_only_filter(client):
+    r = client.get("/fragments/feed?analyzed=1")
+    assert "כותרת מספר 0" in r.text
+    assert "כותרת מספר 6" not in r.text and "בתשלום" not in r.text  # pending and paywalled hidden
+    assert 'name="analyzed" value="1" role="switch" checked' in client.get("/?analyzed=1").text
+
+
+def test_outlet_logo_on_card(client):
+    r = client.get("/")
+    assert 'src="/static/logos/ynet.png"' in r.text
+    assert client.get("/static/logos/ynet.png").status_code == 200
+
+
 def test_panel_shows_analysis_link_and_author_profile(client):
     r = client.get("/fragments/article/1")
     assert r.status_code == 200

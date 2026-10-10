@@ -13,7 +13,7 @@
   <h2>מאיפה מגיעות הכתבות</h2>
   <p>הכתבות נאספות בעיקר מפידי RSS רשמיים, בערך כל 15 דקות. כאשר נדרש טקסט לניתוח, המערכת טוענת את עמוד הכתבה הציבורי, בקצב איטי ובכפוף לקובץ robots.txt של האתר. כתבות בתשלום אינן נטענות ואינן מנותחות. האתר מציג כותרת, מקור, זמן פרסום, תקציר קצר שנכתב על ידי המודל וקישור למקור. הוא <strong>אינו</strong> מציג את תוכן הכתבות. הטקסט ששימש לניתוח נשמר לשימוש פנימי בלבד ונמחק אחרי {{ retention }} ימים.</p>
   <ul class="outlet-list">
-    {% for o in outlets %}<li><span class="tag{% if not o.enabled %} muted{% endif %}">{{ o.name }}{% if not o.enabled %} – לא נאסף כרגע (האתר חוסם גישה אוטומטית){% endif %}</span></li>{% endfor %}
+    {% for o in outlets %}<li><span class="tag{% if not o.enabled %} muted{% endif %}">{% if logo_url(o.id) %}<img src="{{ logo_url(o.id) }}" alt="" width="16" height="16">{% endif %}{{ o.name }}{% if not o.enabled %} – לא נאסף כרגע (האתר חוסם גישה אוטומטית){% endif %}</span></li>{% endfor %}
   </ul>
 
   <h2>מה המודל מדרג</h2>

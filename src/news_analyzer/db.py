@@ -218,8 +218,10 @@ ANALYSIS_COLS = ("an.article_type, an.topic, an.security_score, an.security_conf
 
 def query_feed(conn: sqlite3.Connection, *, outlet: str | None = None, topic: str | None = None,
                leaning: str | None = None, article_type: str | None = None,
-               limit: int = 50, offset: int = 0) -> list[sqlite3.Row]:
+               analyzed_only: bool = False, limit: int = 50, offset: int = 0) -> list[sqlite3.Row]:
     where, params = [], []
+    if analyzed_only:
+        where.append("an.article_id IS NOT NULL")
     if outlet:
         where.append("a.outlet = ?"); params.append(outlet)
     if topic:

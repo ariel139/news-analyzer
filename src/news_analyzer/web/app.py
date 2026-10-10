@@ -32,16 +32,19 @@ class Filters:
                  topic: str | None = Query(None, max_length=40),
                  leaning: str | None = Query(None, pattern=LEANING_PATTERN),
                  type: str | None = Query(None, max_length=20),
+                 analyzed: bool = Query(False),
                  offset: int = Query(0, ge=0, le=100_000)):
         self.outlet = outlet or None
         self.topic = topic if topic in labels.TOPICS else None
         self.leaning = leaning or None
         self.type = type if type in labels.ARTICLE_TYPES else None
+        self.analyzed = analyzed
         self.offset = offset
 
     def query(self, conn: sqlite3.Connection, limit: int = PAGE_SIZE) -> list[sqlite3.Row]:
         return db.query_feed(conn, outlet=self.outlet, topic=self.topic, leaning=self.leaning,
-                             article_type=self.type, limit=limit, offset=self.offset)
+                             article_type=self.type, analyzed_only=self.analyzed,
+                             limit=limit, offset=self.offset)
 
 
 def _profile(conn: sqlite3.Connection, author: str | None) -> dict | None:
@@ -113,15 +116,23 @@ def marker_pct(score: int, lo: int, hi: int) -> float:
     return round((score - lo) / (hi - lo) * 100, 1)
 
 
+# Outlet site icons, vendored once into static/logos/<outlet id>.png so visitors never hit the outlets.
+LOGOS = {p.stem for p in (HERE / "static" / "logos").glob("*.png")}
+
+
+def logo_url(outlet_id: str) -> str | None:
+    return f"/static/logos/{outlet_id}.png" if outlet_id in LOGOS else None
+
+
 templates.env.filters["reltime"] = reltime
-templates.env.globals.update(labels=labels, marker_pct=marker_pct)
+templates.env.globals.update(labels=labels, marker_pct=marker_pct, logo_url=logo_url)
 
 
 def _feed_ctx(request: Request, f: Filters, conn: sqlite3.Connection) -> dict:
     s, reg = get_settings(), get_outlets()
     items = [article_dict(r, reg, s.timezone) for r in f.query(conn)]
     params = {k: v for k, v in {"outlet": f.outlet, "topic": f.topic, "leaning": f.leaning,
-                                "type": f.type}.items() if v}
+                                "type": f.type, "analyzed": "1" if f.analyzed else None}.items() if v}
     return {"request": request, "items": items, "filters": params,
             "next_offset": f.offset + PAGE_SIZE if len(items) == PAGE_SIZE else None}
 

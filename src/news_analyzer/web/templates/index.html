@@ -45,6 +45,11 @@
     </select>
   </label>
   <div class="filters-foot">
+    <label class="switch">
+      <input type="checkbox" name="analyzed" value="1" role="switch" {% if filters.analyzed %}checked{% endif %}>
+      <span class="switch-track" aria-hidden="true"></span>
+      <span>רק כתבות שדורגו</span>
+    </label>
     <p class="hint">סינון לפי נושא, נטייה או סוג מציג רק כתבות שכבר נותחו.</p>
     <a class="reset" href="/">ניקוי סינון</a>
   </div>
