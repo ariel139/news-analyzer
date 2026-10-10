@@ -77,6 +77,12 @@ def cmd_llm_check(args) -> None:
     print(f"OK: Ollama at {settings.ollama_url}, model {settings.llm_model} installed. All models: {names}")
 
 
+def cmd_web(args) -> None:
+    import uvicorn
+
+    uvicorn.run("news_analyzer.web.app:app", host=args.host, port=args.port, reload=args.reload)
+
+
 def cmd_worker(args) -> None:
     from news_analyzer.worker import run_worker
 
@@ -105,6 +111,11 @@ def main(argv: list[str] | None = None) -> None:
     sub.add_parser("purge", help="delete stored article text past retention").set_defaults(func=cmd_purge)
     sub.add_parser("worker", help="run the scheduler (collect + analyze every N minutes)").set_defaults(
         func=cmd_worker)
+    w = sub.add_parser("web", help="run the website/API")
+    w.add_argument("--host", default="127.0.0.1")
+    w.add_argument("--port", type=int, default=8000)
+    w.add_argument("--reload", action="store_true")
+    w.set_defaults(func=cmd_web)
 
     args = p.parse_args(argv)
     _setup_logging(args.verbose)
