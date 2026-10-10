@@ -11,7 +11,7 @@
     btn.setAttribute("aria-label", dark ? "מעבר למצב בהיר" : "מעבר למצב כהה");
     btn.title = btn.getAttribute("aria-label");
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? "#0d0f12" : "#f3f4f6";  // phone browser chrome follows the theme
+    if (meta) meta.content = dark ? "#0c1110" : "#f1f4f3";  // phone browser chrome follows the theme
   }
 
   btn.addEventListener("click", function () {
