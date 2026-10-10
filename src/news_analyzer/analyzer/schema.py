@@ -10,13 +10,14 @@ import json
 import re
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 TOPICS = ("security", "diplomacy", "politics", "economy", "law", "religion_state", "society",
           "health", "education", "culture", "sports", "other")
 ARTICLE_TYPES = ("news", "analysis", "opinion")
 CONFIDENCES = ("low", "medium", "high")
 POLITICAL_AXES = ("security", "religion_state", "economy", "overall")
+SIDES = ("left", "right", "none")
 
 Confidence = Literal["low", "medium", "high"]
 
@@ -43,7 +44,11 @@ class Tone(BaseModel):
 
 
 class LLMAnalysis(BaseModel):
-    """Field order matters: evidence and explanation come before the scores (reason, then rate)."""
+    """Field order matters: evidence and explanation come before the scores (reason, then rate).
+
+    favored_side is committed to in words before any number: small models detected the slant but
+    often put it on the wrong end of the scale, so overall must agree with it (see below).
+    """
 
     model_config = ConfigDict(extra="ignore")
 
@@ -52,6 +57,8 @@ class LLMAnalysis(BaseModel):
                    "health", "education", "culture", "sports", "other"]
     evidence_phrases: list[str] = Field(min_length=1, max_length=4)
     explanation: str = Field(min_length=15, max_length=600)
+    favored_side: Literal["left", "right", "none"] = Field(
+        description="which side of the Israeli left-right spectrum the text's framing favors")
     security: Axis
     religion_state: Axis
     economy: Axis
@@ -61,6 +68,17 @@ class LLMAnalysis(BaseModel):
 
     _hebrew_explanation = field_validator("explanation")(_require_hebrew)
     _hebrew_summary = field_validator("summary")(_require_hebrew)
+
+    @model_validator(mode="after")
+    def _overall_agrees_with_side(self) -> "LLMAnalysis":
+        o = self.overall
+        actual = "none" if not o.applicable or o.score == 0 else ("left" if o.score < 0 else "right")
+        if actual != self.favored_side:
+            need = {"left": "a negative overall score", "right": "a positive overall score",
+                    "none": "overall score 0 or not applicable"}[self.favored_side]
+            raise ValueError(f"favored_side is '{self.favored_side}', which requires {need}; "
+                             f"got overall score {o.score} (applicable={o.applicable})")
+        return self
 
 
 class OutputError(ValueError):
@@ -133,6 +151,7 @@ def to_db_row(result: LLMAnalysis, *, evidence: list[str], model: str, prompt_ve
         "model": model, "prompt_version": prompt_version, "created_at": created_at,
         "duration_sec": round(duration_sec, 1),
         "article_type": result.article_type, "topic": result.topic,
+        "favored_side": result.favored_side,
         "security_score": sec, "security_conf": sec_c,
         "religion_score": rel, "religion_conf": rel_c,
         "economy_score": eco, "economy_conf": eco_c,

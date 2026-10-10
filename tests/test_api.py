@@ -22,6 +22,7 @@ def test_article_detail_and_author_profile(client):
     d = client.get("/api/articles/1").json()
     assert SECRET not in str(d)
     assert d["analysis"]["article_type_he"] == "דעה"
+    assert d["analysis"]["favored_side"] == "left" and d["analysis"]["favored_side_he"] == "שמאל"
     overall = next(a for a in d["analysis"]["axes"] if a["key"] == "overall")
     assert overall["score"] == -1 and overall["confidence_he"] == "בינונית"
     prof = d["author_profile"]

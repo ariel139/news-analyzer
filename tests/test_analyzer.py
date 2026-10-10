@@ -19,6 +19,7 @@ VALID = {
     "topic": "economy",
     "evidence_phrases": ["מפקירה את מעמד הביניים", "ביטוי שלא מופיע בכתבה"],
     "explanation": "הכתבה מביאה את עמדת האופוזיציה ואת תגובת האוצר באופן מאוזן יחסית.",
+    "favored_side": "none",
     "security": {"applicable": False, "score": 0, "confidence": "high"},
     "religion_state": {"applicable": False, "score": 0, "confidence": "high"},
     "economy": {"applicable": True, "score": -1, "confidence": "medium"},
@@ -58,6 +59,13 @@ def test_think_block_and_code_fence_are_tolerated():
     (variant(evidence_phrases=[]), "evidence_phrases"),
     (variant(explanation="The article is balanced and fair to both sides of the debate."), "explanation"),
     (variant(summary="קצר"), "summary"),
+    (variant(favored_side="center"), "favored_side"),
+    # the side named in words and the overall number must agree
+    (variant(favored_side="right"), "favored_side is 'right'"),
+    (variant(favored_side="none", overall={"applicable": True, "score": -2, "confidence": "high"}),
+     "favored_side is 'none'"),
+    (variant(favored_side="left", overall={"applicable": True, "score": 2, "confidence": "high"}),
+     "favored_side is 'left'"),
 ])
 def test_invalid_outputs_rejected(raw, fragment):
     with pytest.raises(OutputError) as e:
@@ -72,6 +80,15 @@ def test_missing_field_rejected():
         parse_llm_output(json.dumps(d, ensure_ascii=False))
 
 
+@pytest.mark.parametrize("side,overall", [
+    ("left", {"applicable": True, "score": -1, "confidence": "medium"}),
+    ("right", {"applicable": True, "score": 2, "confidence": "high"}),
+    ("none", {"applicable": False, "score": 0, "confidence": "low"}),
+])
+def test_consistent_side_and_overall_accepted(side, overall):
+    assert parse_llm_output(variant(favored_side=side, overall=overall)).favored_side == side
+
+
 def test_evidence_must_occur_in_text_ignoring_quote_marks():
     r = parse_llm_output(json.dumps(VALID, ensure_ascii=False))
     assert verified_evidence(r, TITLE + "\n" + BODY) == ["מפקירה את מעמד הביניים"]
@@ -81,7 +98,7 @@ def test_db_row_maps_not_applicable_to_null():
     r = parse_llm_output(json.dumps(VALID, ensure_ascii=False))
     row = to_db_row(r, evidence=[], model="m", prompt_version="v1", duration_sec=1.23, created_at="t")
     assert row["security_score"] is None and row["economy_score"] == -1 and row["overall_score"] == 0
-    assert row["tone_score"] == 1 and row["duration_sec"] == 1.2
+    assert row["tone_score"] == 1 and row["duration_sec"] == 1.2 and row["favored_side"] == "none"
 
 
 def test_ollama_schema_is_self_contained():

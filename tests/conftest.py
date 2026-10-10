@@ -13,6 +13,7 @@ ANALYSIS = {
     "article_type": "opinion", "topic": "politics",
     "evidence_phrases": ["ממשלה הרסנית"],
     "explanation": "הכותב משתמש בביטוי ממשלה הרסנית ומציג רק צד אחד של הוויכוח.",
+    "favored_side": "left",
     "security": {"applicable": False, "score": 0, "confidence": "high"},
     "religion_state": {"applicable": False, "score": 0, "confidence": "high"},
     "economy": {"applicable": False, "score": 0, "confidence": "high"},

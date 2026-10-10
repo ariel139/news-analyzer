@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 
 # Instructions are in English (small models follow them more reliably); all free-text output is Hebrew.
 SYSTEM_PROMPT = """\
@@ -31,7 +31,18 @@ influenced your rating (loaded words, framing, one-sided sourcing). Copy them ch
 
 4. explanation: 1-2 sentences IN HEBREW explaining the rating, referring to those phrases.
 
-5. Scores. For security, religion_state, economy and overall set "applicable": false (and score 0) \
+5. favored_side: whose position does the TEXT advance on the Israeli left-right spectrum - "left", \
+"right" or "none". Judge which side the framing FAVORS, not which side it talks about: a text that \
+attacks the left is right-leaning, and a text that attacks the right is left-leaning. Examples:
+   - Faults the government's or the prime minister's handling of the war, the hostages, the judiciary \
+or the settlers; calls for a hostage deal, ending the war, a Palestinian state or restraint -> "left".
+   - Attacks the left, "leftists" or the judiciary as harmful; defends the government's conduct of the \
+war; calls for settlement, sovereignty, military pressure or no concessions -> "right".
+   - A news report that attributes a criticism to the person making it and also brings the other side \
+or relevant context -> "none", however harsh the quoted criticism is.
+   - Balanced, or not about Israeli politics at all -> "none".
+
+6. Scores. For security, religion_state, economy and overall set "applicable": false (and score 0) \
 when the article does not deal with that issue at all.
    - security (security and foreign policy): -2 = clearly dovish framing (favors diplomacy, agreements, \
 concessions, stresses costs of military action or suffering on the other side); 0 = balanced or neutral; \
@@ -47,11 +58,12 @@ words; 3 = clearly emotive or sensational; 4 = highly inflammatory.
 no discernible leaning; +2 = clearly right. In Israel this mostly reflects positions on the \
 Israeli-Palestinian conflict and the territories, security policy, the judiciary and rule of law, and \
 religion and state. Criticizing a specific politician is not by itself a leaning - look at how the \
-issues are framed. Straight news with balanced sourcing should get 0.
+issues are framed. Straight news with balanced sourcing should get 0. overall MUST agree with \
+favored_side: "left" -> negative, "right" -> positive, "none" -> 0 or not applicable.
    - confidence for each: "high" only when the text gives clear evidence; "low" when the text is short, \
 ambiguous, or mostly quotes others.
 
-6. summary: 2-3 neutral sentences IN HEBREW summarizing what the article reports or argues, with no \
+7. summary: 2-3 neutral sentences IN HEBREW summarizing what the article reports or argues, with no \
 evaluative words.
 
 Rules: explanation and summary MUST be in Hebrew. When unsure, prefer 0 and lower confidence - never \

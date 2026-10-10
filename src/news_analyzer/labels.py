@@ -10,6 +10,8 @@ TOPICS = {
 
 CONFIDENCE = {"low": "נמוכה", "medium": "בינונית", "high": "גבוהה"}
 
+SIDES = {"left": "שמאל", "right": "ימין", "none": "ללא נטייה"}
+
 # key = DB column prefix; low/high = what the two ends of the scale mean
 AXES = [
     {"key": "overall", "title": "סיכום שמאל–ימין", "low": "שמאל", "high": "ימין", "min": -2, "max": 2},

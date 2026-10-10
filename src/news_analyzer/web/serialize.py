@@ -29,6 +29,8 @@ def analysis_dict(row: sqlite3.Row) -> dict | None:
         "article_type_he": labels.ARTICLE_TYPES.get(row["article_type"], row["article_type"]),
         "topic": row["topic"],
         "topic_he": labels.TOPICS.get(row["topic"], row["topic"]),
+        "favored_side": row["favored_side"],
+        "favored_side_he": labels.SIDES.get(row["favored_side"]),
         "axes": axes,
         "explanation": row["explanation"],
         "evidence": json.loads(row["evidence"] or "[]"),

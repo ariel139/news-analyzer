@@ -20,7 +20,7 @@ from typing import Iterator
 from news_analyzer.collectors.models import ArticleCandidate
 from news_analyzer.collectors.normalize import matches_any, title_key
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS articles (
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS analyses (
     duration_sec    REAL,
     article_type    TEXT NOT NULL,
     topic           TEXT NOT NULL,
+    favored_side    TEXT,                   -- left/right/none; NULL for prompt v1 rows
     security_score  INTEGER, security_conf TEXT,
     religion_score  INTEGER, religion_conf TEXT,
     economy_score   INTEGER, economy_conf  TEXT,
@@ -97,8 +98,17 @@ def connect(path: Path | str) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")  # web reads while the worker writes
     conn.executescript(SCHEMA)
+    _migrate(conn)
     conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     return conn
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Bring databases created by older versions up to SCHEMA (CREATE IF NOT EXISTS won't add columns)."""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(analyses)")}
+    if "favored_side" not in cols:  # v1 -> v2
+        conn.execute("ALTER TABLE analyses ADD COLUMN favored_side TEXT")
+        conn.commit()
 
 
 @contextmanager
@@ -210,7 +220,7 @@ def stats(conn: sqlite3.Connection) -> dict:
 # Columns safe to expose. analysis_text is deliberately absent.
 PUBLIC_ARTICLE_COLS = ("a.id, a.outlet, a.url, a.title, a.author, a.published_at, a.excerpt, "
                        "a.status, a.skip_reason")
-ANALYSIS_COLS = ("an.article_type, an.topic, an.security_score, an.security_conf, an.religion_score, "
+ANALYSIS_COLS = ("an.article_type, an.topic, an.favored_side, an.security_score, an.security_conf, an.religion_score, "
                  "an.religion_conf, an.economy_score, an.economy_conf, an.tone_score, an.tone_conf, "
                  "an.overall_score, an.overall_conf, an.explanation, an.evidence, an.summary, an.model, "
                  "an.created_at AS analyzed_at")
