@@ -1,0 +1,48 @@
+# Default: Ollama runs natively on the host (recommended - it gets all your RAM/GPU).
+#   docker compose up -d --build
+# All-in-Docker alternative (needs Docker Desktop memory >= 10 GB for qwen3:8b):
+#   NA_OLLAMA_URL=http://ollama:11434 docker compose --profile ollama up -d --build
+#   docker compose exec ollama ollama pull qwen3:8b
+
+x-app: &app
+  build: .
+  image: news-analyzer:local
+  restart: unless-stopped
+  environment:
+    NA_OLLAMA_URL: ${NA_OLLAMA_URL:-http://host.docker.internal:11434}
+    NA_LLM_MODEL: ${NA_LLM_MODEL:-qwen3:8b}
+    NA_ANALYZE_MAX_PER_RUN: ${NA_ANALYZE_MAX_PER_RUN:-3}
+    NA_ANALYZE_TIME_BUDGET_SEC: ${NA_ANALYZE_TIME_BUDGET_SEC:-600}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"   # makes the host reachable on Linux too
+  volumes:
+    - ./data:/app/data
+    - ./config:/app/config:ro
+    - ./eval:/app/eval
+
+services:
+  web:
+    <<: *app
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *app
+    command: ["python", "-m", "news_analyzer", "worker"]
+
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:0.40.2
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    # NVIDIA GPU (requires nvidia-container-toolkit): uncomment
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices: [{ driver: nvidia, count: all, capabilities: [gpu] }]
+
+volumes:
+  ollama:
