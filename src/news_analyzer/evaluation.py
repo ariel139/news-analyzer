@@ -153,6 +153,10 @@ def run(settings: Settings, model: str | None = None) -> None:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
             f.flush()
             log.info("%d/%d #%d %s", k, len(todo), aid, "ok" if rec["ok"] else "FAILED")
+    cost = getattr(analyzer.client, "total_cost_usd", None)
+    if cost is not None:
+        log.info("hosted LLM cost of this eval run: $%.5f (%d prompt + %d completion tokens)", cost,
+                 *analyzer.client.total_tokens)
     analyzer.client.close()
 
 

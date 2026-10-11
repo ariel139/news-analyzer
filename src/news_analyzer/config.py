@@ -5,8 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 import yaml
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +33,16 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2  # extra attempts after the first one
     llm_timeout: float = 900.0
     llm_disable_thinking: bool = True  # Qwen3 "thinking" mode is slow on CPU and not needed here
+
+    # Optional hosted backend (any OpenAI-compatible API, OpenRouter by default). Article text leaves this
+    # machine when llm_provider="openai", so it is strictly opt-in. llm_model is then the provider's model id.
+    llm_provider: Literal["ollama", "openai"] = "ollama"
+    llm_api_url: str = "https://openrouter.ai/api/v1"
+    llm_api_key: SecretStr | None = None
+    # OpenRouter upstream providers to use, in order, with no fallback (e.g. "deepinfra"). Many providers accept
+    # json_schema but don't enforce it; pin one that does. Empty = let OpenRouter choose.
+    llm_api_providers: str = ""
+    llm_max_cost_usd_per_run: float = 0.05  # stop starting new analyses once a run has cost this much
 
     # Analysis budget - keep small on CPU-only machines
     analyze_max_per_run: int = 3

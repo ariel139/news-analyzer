@@ -69,12 +69,16 @@ def cmd_llm_check(args) -> None:
     from news_analyzer.pipeline import make_analyzer
 
     settings = get_settings()
-    client = make_analyzer(settings).client
     try:
+        client = make_analyzer(settings).client
         names = client.check()
     except LLMUnavailable as e:
         raise SystemExit(f"NOT OK: {e}")
-    print(f"OK: Ollama at {settings.ollama_url}, model {settings.llm_model} installed. All models: {names}")
+    if settings.llm_provider == "openai":
+        print(f"OK: hosted API at {settings.llm_api_url}, model {settings.llm_model} found, API key accepted "
+              f"(key not shown). Article text is SENT to this provider. {len(names)} models offered.")
+    else:
+        print(f"OK: Ollama at {settings.ollama_url}, model {settings.llm_model} installed. All models: {names}")
 
 
 def cmd_eval_export(args) -> None:
@@ -124,7 +128,7 @@ def main(argv: list[str] | None = None) -> None:
     a.add_argument("--id", type=int, action="append", help="analyze specific article id(s)")
     a.add_argument("--reanalyze", action="store_true", help="with --id: discard cached rating and redo")
     a.set_defaults(func=cmd_analyze)
-    sub.add_parser("llm-check", help="verify Ollama is reachable and the model is pulled").set_defaults(
+    sub.add_parser("llm-check", help="verify the LLM backend (Ollama or hosted) is reachable and the model exists").set_defaults(
         func=cmd_llm_check)
 
     sub.add_parser("stats", help="article counts by status/outlet").set_defaults(func=cmd_stats)
@@ -138,7 +142,7 @@ def main(argv: list[str] | None = None) -> None:
     for name, fn, hlp in (("eval-run", cmd_eval_run, "predict labeled articles (resumable) and score"),
                           ("eval-score", cmd_eval_score, "score existing predictions against labels")):
         e = sub.add_parser(name, help=hlp)
-        e.add_argument("--model", default=None, help="Ollama model (default: NA_LLM_MODEL)")
+        e.add_argument("--model", default=None, help="model id (default: NA_LLM_MODEL)")
         e.set_defaults(func=fn)
 
     w = sub.add_parser("web", help="run the website/API")
