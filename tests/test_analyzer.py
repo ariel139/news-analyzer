@@ -60,12 +60,11 @@ def test_think_block_and_code_fence_are_tolerated():
     (variant(explanation="The article is balanced and fair to both sides of the debate."), "explanation"),
     (variant(summary="קצר"), "summary"),
     (variant(favored_side="center"), "favored_side"),
-    # the side named in words and the overall number must agree
-    (variant(favored_side="right"), "favored_side is 'right'"),
-    (variant(favored_side="none", overall={"applicable": True, "score": -2, "confidence": "high"}),
-     "favored_side is 'none'"),
-    (variant(favored_side="left", overall={"applicable": True, "score": 2, "confidence": "high"}),
-     "favored_side is 'left'"),
+    # other scripts slipped into the Hebrew text
+    (variant(explanation="הכתבה מציגה את הדחייה של الانتخابات באופן מאוזן יחסית."), "explanation"),
+    (variant(summary="הממשלה אישרה את התקציב, והכתבה מביאה 報導 של שני הצדדים באופן מאוזן."), "summary"),
+    # the grammar pattern: an ASCII double quote would end the JSON string during constrained decoding
+    (variant(explanation='הכתבה מביאה את עמדת צה"ל ואת תגובת האוצר באופן מאוזן.'), "explanation"),
 ])
 def test_invalid_outputs_rejected(raw, fragment):
     with pytest.raises(OutputError) as e:
@@ -86,7 +85,31 @@ def test_missing_field_rejected():
     ("none", {"applicable": False, "score": 0, "confidence": "low"}),
 ])
 def test_consistent_side_and_overall_accepted(side, overall):
-    assert parse_llm_output(variant(favored_side=side, overall=overall)).favored_side == side
+    r = parse_llm_output(variant(favored_side=side, overall=overall))
+    assert r.favored_side == side and r.overall.score == overall["score"]
+
+
+@pytest.mark.parametrize("side,overall,expected", [
+    ("right", {"applicable": True, "score": 0, "confidence": "high"}, (True, 1)),
+    ("left", {"applicable": False, "score": 0, "confidence": "medium"}, (True, -1)),
+    ("left", {"applicable": True, "score": 2, "confidence": "high"}, (True, -2)),
+    ("none", {"applicable": True, "score": -2, "confidence": "high"}, (True, 0)),
+])
+def test_overall_follows_favored_side_instead_of_retrying(side, overall, expected):
+    r = parse_llm_output(variant(favored_side=side, overall=overall))
+    assert (r.overall.applicable, r.overall.score) == expected and r.overall.confidence == "low"
+
+
+def test_foreign_script_rejected_even_without_the_pattern():
+    """Backends that ignore the schema pattern still get caught by the validator."""
+    from news_analyzer.analyzer.schema import _require_hebrew
+    with pytest.raises(ValueError, match="Hebrew only"):
+        _require_hebrew("הכתבה מביאה את עמדת האופוזיציה 報導 באופן מאוזן יחסית.")
+
+
+def test_hebrew_gershayim_and_latin_names_allowed():
+    r = parse_llm_output(variant(explanation="לפי בלומברג ו-AI, צה״ל והאוצר הגיבו (באופן מאוזן) – 5% בלבד."))
+    assert "צה״ל" in r.explanation
 
 
 def test_evidence_must_occur_in_text_ignoring_quote_marks():
@@ -105,6 +128,9 @@ def test_ollama_schema_is_self_contained():
     s = json.dumps(ollama_json_schema())
     assert "$ref" not in s and "$defs" not in s
     assert "evidence_phrases" in s
+    props = ollama_json_schema()["properties"]
+    assert props["explanation"]["pattern"].startswith("^[") and "pattern" in props["summary"]
+    assert "pattern" not in props["evidence_phrases"]["items"]  # copied verbatim, may contain any quote mark
 
 
 # ------------------------------------------------------------------ prompt
