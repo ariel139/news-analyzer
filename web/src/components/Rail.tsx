@@ -23,9 +23,9 @@ export function Rail() {
   return (
     <header className="rail">
       <div className="rail-top">
-        <Link className="brand" to="/" aria-label="מנתח חדשות, לעמוד הראשי">
+        <Link className="brand" to="/" aria-label="זווית, לעמוד הראשי">
           <span className="brand-mark" aria-hidden="true"><BrandMark /></span>
-          <span className="brand-text">מנתח חדשות</span>
+          <span className="brand-text">זווית</span>
         </Link>
         <span className="rail-actions">
           <Link className="icon-btn" to="/methodology" aria-label="איך זה עובד" title="איך זה עובד" aria-current={pathname === "/methodology" ? "page" : undefined}>

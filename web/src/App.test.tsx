@@ -141,7 +141,7 @@ describe("article page", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "כותרת מספר 0" })).toBeInTheDocument();
     expect(await screen.findByText("למה הדירוג הזה")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.title).toBe("כותרת מספר 0 · מנתח חדשות");
+    expect(document.title).toBe("כותרת מספר 0 · זווית");
   });
 
   it("says when the article doesn't exist", async () => {

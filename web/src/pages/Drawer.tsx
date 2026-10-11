@@ -35,7 +35,7 @@ export function Drawer({ background }: { background: Location }) {
 
   useEffect(() => {
     const prev = document.title;
-    if (a) document.title = `${a.title} · מנתח חדשות`;
+    if (a) document.title = `${a.title} · זווית`;
     return () => void (document.title = prev);
   }, [a]);
 

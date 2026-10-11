@@ -4,7 +4,7 @@ import { Rail } from "./Rail";
 /** Page chrome: skip link, start rail, main column and an optional end rail. */
 export function Shell({ title, end, children }: { title?: string; end?: ReactNode; children: ReactNode }) {
   useEffect(() => {
-    document.title = title ? `${title} · מנתח חדשות` : "מנתח חדשות";
+    document.title = title ? `${title} · זווית` : "זווית";
   }, [title]);
 
   return (

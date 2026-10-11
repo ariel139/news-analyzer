@@ -1,6 +1,6 @@
-# news_analyzer: Israeli news, rated by a local LLM (POC)
+# Zavit (זווית): Israeli news, rated by a local LLM (POC)
 
-A Hebrew, right-to-left website that aggregates recent articles from major Israeli outlets and shows an AI-generated political-leaning analysis for each one. Everything runs locally with open-source tools and models.
+Zavit ("angle") is a Hebrew, right-to-left website that aggregates recent articles from major Israeli outlets and shows an AI-generated political-leaning analysis for each one. Everything runs locally with open-source tools and models.
 
 > **Status: experiment.** Ratings are machine-generated and subjective. The site shows titles, metadata, a model-written summary and a link to the original. It never displays article text.
 
