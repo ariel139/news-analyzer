@@ -8,8 +8,9 @@ A Hebrew, right-to-left website that aggregates recent articles from major Israe
  RSS feeds ──► collectors ──► SQLite ◄── analyzer (Ollama, local LLM)
  (+ polite page fetch,           │             ▲
     robots.txt, rate limit)      ▼             │ every 15 min: collect → analyze N newest
-                           FastAPI + HTMX ◄── worker (APScheduler)
-                           (Hebrew RTL site + /api)
+                     Express + React ◄── worker (APScheduler)
+                     (Node, reads the DB;  Python)
+                      Hebrew RTL site + /api)
 ```
 
 | module | what it does |
@@ -18,7 +19,8 @@ A Hebrew, right-to-left website that aggregates recent articles from major Israe
 | `src/news_analyzer/db.py` | SQLite schema, dedup (normalized URL, plus outlet+title), status flow, retention purge, read queries that never select article text |
 | `src/news_analyzer/analyzer/` | prompt, Pydantic output schema (also used as Ollama's JSON schema), Ollama client, validate-and-retry loop |
 | `src/news_analyzer/pipeline.py`, `worker.py` | orchestration and the 15-minute schedule |
-| `src/news_analyzer/web/` | FastAPI JSON API (`/api/...`) and server-rendered Jinja2 + HTMX pages |
+| `web/server/` | Express JSON API (`/api/...`), TypeScript run directly by Node 24. Opens the SQLite DB read-only |
+| `web/src/` | React + Vite client: feed, filters, article drawer, article and methodology pages. One component per file, styles in `web/src/styles.css` |
 | `src/news_analyzer/evaluation.py`, `eval/` | agreement between the model and your hand labels |
 | `config/outlets.yaml` | outlets, one line each |
 
@@ -101,10 +103,23 @@ docker compose exec ollama ollama pull qwen3:8b
 
 ### 2b. Run without Docker
 
+Needs Python 3.11+ and Node 24+.
+
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 scripts/run_local.sh        # worker in background + web on http://127.0.0.1:8000
 ```
+
+### Working on the UI
+
+```bash
+cd web && npm install
+npm run dev                 # API on :8000 (restarts on change) + Vite on http://localhost:5173 (hot reload)
+npm test                    # server (node:test) + client (Vitest) tests
+npm run build && npm start  # production build served by Express on :8000
+```
+
+The web server reads the same `NA_*` settings and `.env` as the Python side. Relative paths resolve against the repo root. `NA_WEB_HOST` / `NA_WEB_PORT` set where it listens.
 
 ## CLI
 
@@ -116,7 +131,6 @@ python -m news_analyzer analyze --id 42 --reanalyze
 python -m news_analyzer stats                     # counts by status/outlet + failure log size
 python -m news_analyzer purge                     # drop stored text older than 30 days (worker does this daily)
 python -m news_analyzer worker                    # scheduler
-python -m news_analyzer web [--port 8000]         # website + API (docs at /api/docs)
 python -m news_analyzer eval-export | eval-run | eval-score
 ```
 
@@ -133,7 +147,7 @@ With Docker, prefix commands with `docker compose exec worker`, e.g. `docker com
    - Malformed outputs are listed in `select * from analysis_failures`.
 4. **API.**
    - Open http://localhost:8000/api/articles?leaning=0 and http://localhost:8000/api/articles/1.
-   - Interactive docs are at `/api/docs`.
+   - Other endpoints: `/api/meta`, `/api/overview`, `/api/new?since=...`, `/api/methodology`, `/healthz`.
    - No response contains article text.
 5. **Frontend.** Open http://localhost:8000 on a phone-width window.
    - Click a title to see its scales, the "why" explanation, the summary and the link.
@@ -141,7 +155,7 @@ With Docker, prefix commands with `docker compose exec worker`, e.g. `docker com
    - Read `/methodology`.
 6. **Evaluation.** Fill `eval/data/labels.csv`, then run `eval-run`. See `eval/README.md`.
 
-Run the tests with `pytest`. There are 67 tests: collectors, robots handling, DB, JSON validation and retry, API/web (including "article text never leaks") and metrics. They make no network calls.
+Run the Python tests with `pytest` (collectors, robots handling, DB, JSON validation and retry, metrics) and the web tests with `cd web && npm test` (API, including "article text never leaks", and the React UI). None of them make network calls.
 
 ## Rating design (short)
 

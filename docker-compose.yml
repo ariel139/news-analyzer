@@ -21,14 +21,21 @@ x-app: &app
     - ./eval:/app/eval
 
 services:
-  web:
-    <<: *app
+  web:   # Express + React (Node); reads the DB the worker writes
+    build: { context: ., dockerfile: web/Dockerfile }
+    image: news-analyzer-web:local
+    restart: unless-stopped
+    environment:
+      NA_AUTHOR_MIN_ARTICLES: ${NA_AUTHOR_MIN_ARTICLES:-5}
+      NA_LLM_MODEL: ${NA_LLM_MODEL:-qwen3:8b}
     ports:
       - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./config:/app/config:ro
 
   worker:
     <<: *app
-    command: ["python", "-m", "news_analyzer", "worker"]
 
   ollama:
     profiles: ["ollama"]

@@ -10,11 +10,11 @@ Model to use: `$ARGUMENTS`. If that is empty, use `NA_LLM_MODEL` from `.env`, or
 Go step by step. Stop at the first blocking problem and tell me exactly what I need to do. Don't guess past it.
 
 1. **Environment.**
-   - Check Python 3.11+ and that `.venv` exists with the package installed.
+   - Check Python 3.11+ and that `.venv` exists with the package installed, and Node 24+ for the web.
    - If it doesn't, run `uv venv .venv -p 3.12 && uv pip install -p .venv -e ".[dev]"` (or the pip equivalent).
    - Check whether `docker compose` is available.
    - Note whether you are running inside a container. Tell from `/.dockerenv` or a linuxkit kernel.
-2. **Tests.** Run `.venv/bin/pytest -q`. If anything fails, show me the failures and stop.
+2. **Tests.** Run `.venv/bin/pytest -q` and `cd web && npm test`. If anything fails, show me the failures and stop.
 3. **Ollama.** Find a reachable Ollama server. Try, in order:
    - `NA_OLLAMA_URL`
    - `http://localhost:11434`
@@ -35,8 +35,8 @@ Go step by step. Stop at the first blocking problem and tell me exactly what I n
    - If one article takes more than 5 minutes, recommend `qwen3:4b` or a GPU. Don't change the defaults yourself.
 6. **Start the services.**
    - If Docker is available, use `docker compose up -d --build`. Set `NA_OLLAMA_URL` / `NA_LLM_MODEL` in `.env` only if they differ from the defaults, and tell me what you changed.
-   - Otherwise start `python -m news_analyzer worker` and `python -m news_analyzer web --host 127.0.0.1 --port 8000` in the background.
-   - Verify that `/healthz`, `/api/articles` and `/` return 200, and that `/fragments/article/<id of the rated article>` contains `למה הדירוג הזה`.
+   - Otherwise start `python -m news_analyzer worker` in the background, and the site with `cd web && npm ci && npm run build && npm start` (Node 24+).
+   - Verify that `/healthz`, `/api/articles` and `/` return 200, and that `/api/articles/<id of the rated article>` has a non-null `analysis`.
 7. **Report.** Give me a short summary with:
    - the URL to open
    - the outlet counts
