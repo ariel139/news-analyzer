@@ -27,11 +27,12 @@ export function Icon({ name, className = "" }: { name: keyof typeof ICONS | stri
   );
 }
 
+/** Logo: an angle (two rays from one vertex) with its arc in the accent color. */
 export function BrandMark() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M4 15h16M6 9h12" />
-      <circle cx="14" cy="15" r="2.4" fill="currentColor" stroke="none" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 19h17M3.5 19l8-13.85" />
+      <path d="M12.9 17.7a9.5 9.5 0 0 0-3.55-6.2" stroke="var(--accent-strong)" strokeWidth="2.2" strokeLinecap="butt" />
     </svg>
   );
 }
