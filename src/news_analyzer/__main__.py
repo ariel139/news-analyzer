@@ -97,12 +97,6 @@ def cmd_eval_score(args) -> None:
     evaluation.print_report(evaluation.score(args.model or get_settings().llm_model))
 
 
-def cmd_web(args) -> None:
-    import uvicorn
-
-    uvicorn.run("news_analyzer.web.app:app", host=args.host, port=args.port, reload=args.reload)
-
-
 def cmd_worker(args) -> None:
     from news_analyzer.worker import run_worker
 
@@ -141,11 +135,6 @@ def main(argv: list[str] | None = None) -> None:
         e.add_argument("--model", default=None, help="Ollama model (default: NA_LLM_MODEL)")
         e.set_defaults(func=fn)
 
-    w = sub.add_parser("web", help="run the website/API")
-    w.add_argument("--host", default="127.0.0.1")
-    w.add_argument("--port", type=int, default=8000)
-    w.add_argument("--reload", action="store_true")
-    w.set_defaults(func=cmd_web)
 
     args = p.parse_args(argv)
     _setup_logging(args.verbose)

@@ -5,7 +5,8 @@ Article status flow:
     paywalled (terminal; never fetched or analyzed)
     skipped   (terminal; reason in skip_reason: category | robots | short_text | fetch_error)
 
-`analysis_text` is internal input for the LLM and must never be rendered by the web layer.
+`analysis_text` is internal input for the LLM. The web server (web/server/db.ts) reads this DB read-only
+and never selects it.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterator, Sequence
+from typing import Iterator
 
 from news_analyzer.collectors.models import ArticleCandidate
 from news_analyzer.collectors.normalize import matches_any, title_key
@@ -214,87 +215,3 @@ def stats(conn: sqlite3.Connection) -> dict:
     by_outlet = dict(conn.execute("SELECT outlet, COUNT(*) FROM articles GROUP BY outlet").fetchall())
     failures = conn.execute("SELECT COUNT(*) FROM analysis_failures").fetchone()[0]
     return {"by_status": by_status, "by_outlet": by_outlet, "failure_log_rows": failures}
-
-
-# --------------------------------------------------------------------------- read side (web/API)
-# Columns safe to expose. analysis_text is deliberately absent.
-PUBLIC_ARTICLE_COLS = ("a.id, a.outlet, a.url, a.title, a.author, a.published_at, a.excerpt, "
-                       "a.status, a.skip_reason")
-ANALYSIS_COLS = ("an.article_type, an.topic, an.favored_side, an.security_score, an.security_conf, an.religion_score, "
-                 "an.religion_conf, an.economy_score, an.economy_conf, an.tone_score, an.tone_conf, "
-                 "an.overall_score, an.overall_conf, an.explanation, an.evidence, an.summary, an.model, "
-                 "an.created_at AS analyzed_at")
-
-
-def query_feed(conn: sqlite3.Connection, *, outlets: Sequence[str] = (), topic: str | None = None,
-               leaning: str | None = None, article_type: str | None = None,
-               analyzed_only: bool = False, q: str | None = None,
-               limit: int = 50, offset: int = 0) -> list[sqlite3.Row]:
-    where, params = [], []
-    if q:
-        escaped = q.replace("!", "!!").replace("%", "!%").replace("_", "!_")
-        where.append("a.title LIKE ? ESCAPE '!'"); params.append(f"%{escaped}%")
-    if analyzed_only:
-        where.append("an.article_id IS NOT NULL")
-    if outlets:
-        where.append(f"a.outlet IN ({', '.join('?' * len(outlets))})"); params.extend(outlets)
-    if topic:
-        where.append("an.topic = ?"); params.append(topic)
-    if article_type:
-        where.append("an.article_type = ?"); params.append(article_type)
-    if leaning == "na":
-        where.append("an.article_id IS NOT NULL AND an.overall_score IS NULL")
-    elif leaning not in (None, ""):
-        where.append("an.overall_score = ?"); params.append(int(leaning))
-    sql = (f"SELECT {PUBLIC_ARTICLE_COLS}, {ANALYSIS_COLS} FROM articles a "
-           "LEFT JOIN analyses an ON an.article_id = a.id")
-    if where:
-        sql += " WHERE " + " AND ".join(where)
-    sql += " ORDER BY a.published_at DESC LIMIT ? OFFSET ?"
-    return conn.execute(sql, [*params, limit, offset]).fetchall()
-
-
-def get_article(conn: sqlite3.Connection, article_id: int) -> sqlite3.Row | None:
-    return conn.execute(
-        f"SELECT {PUBLIC_ARTICLE_COLS}, {ANALYSIS_COLS} FROM articles a "
-        "LEFT JOIN analyses an ON an.article_id = a.id WHERE a.id = ?",
-        (article_id,),
-    ).fetchone()
-
-
-def author_overall_scores(conn: sqlite3.Connection, author: str) -> list[int]:
-    """Overall scores of an author's analyzed articles (low-confidence and N/A excluded)."""
-    rows = conn.execute(
-        """SELECT an.overall_score FROM articles a JOIN analyses an ON an.article_id = a.id
-           WHERE a.author = ? AND an.overall_score IS NOT NULL AND an.overall_conf != 'low'""",
-        (author,),
-    ).fetchall()
-    return [r[0] for r in rows]
-
-
-def feed_overview(conn: sqlite3.Connection, outlets_since: str, topics_since: str) -> dict:
-    """Counts for the sidebar: articles per outlet and analyzed articles per topic, plus last collection time."""
-    outlets = dict(conn.execute(
-        "SELECT outlet, COUNT(*) FROM articles WHERE published_at >= ? GROUP BY outlet", (outlets_since,)).fetchall())
-    topics = dict(conn.execute(
-        """SELECT an.topic, COUNT(*) FROM analyses an JOIN articles a ON a.id = an.article_id
-           WHERE a.published_at >= ? GROUP BY an.topic ORDER BY COUNT(*) DESC""", (topics_since,)).fetchall())
-    last = conn.execute("SELECT MAX(collected_at) FROM articles").fetchone()[0]
-    return {"outlets": outlets, "topics": topics, "last_collected": last}
-
-
-def analysis_breakdown(conn: sqlite3.Connection, since: str) -> dict:
-    """Aggregate counts for the end-rail stats: overall leaning and article type of articles analyzed
-    in the window. Whole-corpus aggregates only, never per outlet or author."""
-    base = "FROM analyses an JOIN articles a ON a.id = an.article_id WHERE a.published_at >= ?"
-    leaning = dict(conn.execute(
-        f"SELECT an.overall_score, COUNT(*) {base} AND an.overall_score IS NOT NULL GROUP BY an.overall_score",
-        (since,)).fetchall())
-    not_political = conn.execute(f"SELECT COUNT(*) {base} AND an.overall_score IS NULL", (since,)).fetchone()[0]
-    types = dict(conn.execute(
-        f"SELECT an.article_type, COUNT(*) {base} GROUP BY an.article_type ORDER BY COUNT(*) DESC", (since,)).fetchall())
-    return {"leaning": leaning, "not_political": not_political, "types": types}
-
-
-def count_collected_after(conn: sqlite3.Connection, since: str) -> int:
-    return conn.execute("SELECT COUNT(*) FROM articles WHERE collected_at > ?", (since,)).fetchone()[0]

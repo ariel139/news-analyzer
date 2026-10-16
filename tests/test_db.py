@@ -46,13 +46,11 @@ def test_pending_queue_newest_first_and_age_limit(conn):
     assert [r["title"] for r in db.pending_articles(conn, limit=10, max_age_hours=24)] == ["ב", "א"]
 
 
-def test_feed_query_never_exposes_text_and_purge(conn):
+def test_save_text_and_purge(conn):
     db.insert_candidates(conn, [cand("https://x/1", "א")])
     aid = conn.execute("SELECT id FROM articles").fetchone()[0]
     db.save_text(conn, aid, "טקסט מלא סודי", "כותב")
-    row = db.query_feed(conn)[0]
-    assert "analysis_text" not in row.keys()
-    assert row["author"] == "כותב"
+    assert conn.execute("SELECT author FROM articles").fetchone()[0] == "כותב"
     # retention: pretend text is 31 days old
     conn.execute("UPDATE articles SET text_fetched_at = ?", (db.iso(db.utcnow() - timedelta(days=31)),))
     assert db.purge_old_text(conn, 30) == 1

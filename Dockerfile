@@ -10,5 +10,5 @@ RUN pip install .
 COPY config ./config
 RUN mkdir -p data eval/data
 
-EXPOSE 8000
-CMD ["python", "-m", "news_analyzer", "web", "--host", "0.0.0.0", "--port", "8000"]
+# Python side: collector + LLM analyzer worker. The website is web/Dockerfile (Node).
+CMD ["python", "-m", "news_analyzer", "worker"]
