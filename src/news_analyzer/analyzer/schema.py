@@ -7,6 +7,7 @@ The same Pydantic model is (1) sent to Ollama as a JSON schema for constrained d
 from __future__ import annotations
 
 import json
+import logging
 import re
 from typing import Literal
 
@@ -21,14 +22,25 @@ SIDES = ("left", "right", "none")
 
 Confidence = Literal["low", "medium", "high"]
 
+log = logging.getLogger(__name__)
+
 _HEB = re.compile(r"[֐-׿]")
 _LAT = re.compile(r"[A-Za-z]")
+# Arabic, Cyrillic, CJK, kana, Hangul: small models sometimes slip these into Hebrew text.
+_FOREIGN_SCRIPT = re.compile(r"[Ѐ-ӿ؀-ۿݐ-ݿ぀-ヿ㐀-鿿가-힯]")
+
+# Allowed characters for the Hebrew free-text fields. It is part of the JSON schema, so Ollama's decoding grammar
+# never lets the model emit another script in the first place (no retry needed). No ASCII double quote: the grammar
+# works on raw JSON text, where it would end the string - the model uses ״ (צה״ל) or ' instead.
+HEBREW_TEXT_PATTERN = "^[֐-׿A-Za-z0-9 .,:;!?'()%/&+€₪“”‘’…–—-]+$"
 
 
 def _require_hebrew(v: str) -> str:
     heb, lat = len(_HEB.findall(v)), len(_LAT.findall(v))
     if heb < 10 or heb < 0.7 * (heb + lat):
         raise ValueError("must be written in Hebrew")
+    if _FOREIGN_SCRIPT.search(v):
+        raise ValueError("must be written in Hebrew only (found Arabic, Cyrillic or East Asian characters)")
     return v.strip()
 
 
@@ -47,7 +59,7 @@ class LLMAnalysis(BaseModel):
     """Field order matters: evidence and explanation come before the scores (reason, then rate).
 
     favored_side is committed to in words before any number: small models detected the slant but
-    often put it on the wrong end of the scale, so overall must agree with it (see below).
+    often put it on the wrong end of the scale, so overall is made to agree with it (see below).
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -56,7 +68,7 @@ class LLMAnalysis(BaseModel):
     topic: Literal["security", "diplomacy", "politics", "economy", "law", "religion_state", "society",
                    "health", "education", "culture", "sports", "other"]
     evidence_phrases: list[str] = Field(min_length=1, max_length=4)
-    explanation: str = Field(min_length=15, max_length=600)
+    explanation: str = Field(min_length=15, max_length=600, pattern=HEBREW_TEXT_PATTERN)
     favored_side: Literal["left", "right", "none"] = Field(
         description="which side of the Israeli left-right spectrum the text's framing favors")
     security: Axis
@@ -64,20 +76,30 @@ class LLMAnalysis(BaseModel):
     economy: Axis
     tone: Tone
     overall: Axis
-    summary: str = Field(min_length=30, max_length=900)
+    summary: str = Field(min_length=30, max_length=900, pattern=HEBREW_TEXT_PATTERN)
 
     _hebrew_explanation = field_validator("explanation")(_require_hebrew)
     _hebrew_summary = field_validator("summary")(_require_hebrew)
 
     @model_validator(mode="after")
     def _overall_agrees_with_side(self) -> "LLMAnalysis":
-        o = self.overall
+        """The side named in words wins; the number follows it with low confidence.
+
+        Rejecting a mismatch and retrying did not help: at temperature 0.1 the model repeated the same answer
+        (2 of 9 eval articles failed after 3 attempts, ~2 min per attempt on CPU).
+        """
+        o, side = self.overall, self.favored_side
         actual = "none" if not o.applicable or o.score == 0 else ("left" if o.score < 0 else "right")
-        if actual != self.favored_side:
-            need = {"left": "a negative overall score", "right": "a positive overall score",
-                    "none": "overall score 0 or not applicable"}[self.favored_side]
-            raise ValueError(f"favored_side is '{self.favored_side}', which requires {need}; "
-                             f"got overall score {o.score} (applicable={o.applicable})")
+        if actual == side:
+            return self
+        if side == "none":
+            fixed = Axis(applicable=o.applicable, score=0, confidence="low")
+        else:
+            sign = -1 if side == "left" else 1
+            fixed = Axis(applicable=True, score=sign * max(1, abs(o.score)), confidence="low")
+        log.info("overall %s (applicable=%s) disagreed with favored_side=%s; set to %s",
+                 o.score, o.applicable, side, fixed.score)
+        self.overall = fixed
         return self
 
 

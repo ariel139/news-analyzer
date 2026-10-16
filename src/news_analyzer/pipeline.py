@@ -34,9 +34,17 @@ MAX_FETCH_ATTEMPTS = 3
 
 
 def make_analyzer(settings: Settings):
-    from news_analyzer.analyzer.llm import OllamaClient
+    from news_analyzer.analyzer.llm import LLMUnavailable, OllamaClient, OpenAICompatClient
     from news_analyzer.analyzer.service import Analyzer
 
+    if settings.llm_provider == "openai":
+        if settings.llm_api_key is None:
+            raise LLMUnavailable("NA_LLM_PROVIDER=openai needs NA_LLM_API_KEY (env var or .env)")
+        client = OpenAICompatClient(settings.llm_api_url, settings.llm_api_key.get_secret_value(),
+                                    settings.llm_model, timeout=min(settings.llm_timeout, 180),
+                                    temperature=settings.llm_temperature,
+                                    providers=tuple(p.strip() for p in settings.llm_api_providers.split(",") if p.strip()))
+        return Analyzer(client, max_retries=settings.llm_max_retries, max_chars=settings.max_analysis_chars)
     client = OllamaClient(settings.ollama_url, settings.llm_model, timeout=settings.llm_timeout,
                           temperature=settings.llm_temperature, num_ctx=settings.llm_num_ctx,
                           disable_thinking=settings.llm_disable_thinking)
@@ -59,12 +67,14 @@ def run_analysis(settings: Settings, registry: OutletRegistry, *, limit: int | N
     limit = settings.analyze_max_per_run if limit is None else limit
     budget = settings.analyze_time_budget_sec if time_budget_sec is None else time_budget_sec
     counts = {"done": 0, "failed": 0, "skipped": 0}
-    analyzer = make_analyzer(settings)
+    analyzer = None
     try:
+        analyzer = make_analyzer(settings)
         analyzer.client.check()
     except LLMUnavailable as e:
         log.error("analysis skipped: %s", e)
-        analyzer.client.close()
+        if analyzer:
+            analyzer.client.close()
         return counts
 
     t0 = time.monotonic()
@@ -83,6 +93,11 @@ def run_analysis(settings: Settings, registry: OutletRegistry, *, limit: int | N
                 break
             if time.monotonic() - t0 > budget:
                 log.info("time budget of %ds used up; the rest waits for the next cycle", budget)
+                break
+            spent = getattr(analyzer.client, "total_cost_usd", 0.0)
+            if spent >= settings.llm_max_cost_usd_per_run:
+                log.warning("cost cap reached ($%.4f >= $%.2f, NA_LLM_MAX_COST_USD_PER_RUN); stopping this run",
+                            spent, settings.llm_max_cost_usd_per_run)
                 break
             if row["status"] != "pending":  # cached (done) or never-analyze (paywalled/skipped)
                 log.info("#%d is %s - not analyzing (use --reanalyze to redo)", row["id"], row["status"])

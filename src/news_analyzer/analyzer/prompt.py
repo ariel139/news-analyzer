@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-PROMPT_VERSION = "v2"
+PROMPT_VERSION = "v3"
 
 # Instructions are in English (small models follow them more reliably); all free-text output is Hebrew.
 SYSTEM_PROMPT = """\
@@ -66,8 +66,9 @@ ambiguous, or mostly quotes others.
 7. summary: 2-3 neutral sentences IN HEBREW summarizing what the article reports or argues, with no \
 evaluative words.
 
-Rules: explanation and summary MUST be in Hebrew. When unsure, prefer 0 and lower confidence - never \
-invent a slant. Output only the JSON object."""
+Rules: explanation and summary MUST be in Hebrew only - no English, Arabic, Chinese or Korean words; write \
+acronyms and quotes with ״ or ' (צה״ל), never with a double quote. When unsure, prefer 0 and lower confidence - \
+never invent a slant. Output only the JSON object, compact on a single line: no indentation, no line breaks."""
 
 
 def truncate(text: str, max_chars: int) -> str:

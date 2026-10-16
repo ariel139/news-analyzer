@@ -57,6 +57,34 @@ Paid articles are never analyzed. They are recognised by URL pattern, by a feed 
 
 The eval set (below) is how you should decide. Treat these as priors.
 
+**Optional hosted backend (opt-in): `google/gemma-4-26b-a4b-it` via OpenRouter, pinned to DeepInfra.**
+
+- **What it costs you: article text leaves this machine.** The headline and body (byline stripped, no outlet) go to
+  OpenRouter and DeepInfra. Requests send `data_collection: deny`, so only providers that declare they don't
+  retain or train on prompts are used. That is their declaration; we can't verify it.
+- **Measured on the 30-article eval** (silver labels, small sets; details in `docs/model-research.md`):
+  - overall within ±1: 100% for hosted gemma vs 30% for local qwen3:8b;
+  - QWK: 0.71 vs 0.33; bias: +0.04 vs +1.5;
+  - neutral articles rated ±2: 0 of 22, against 5 of 8 for qwen3:8b;
+  - time: ~6 s per article vs ~215 s;
+  - cost: ~$0.28 per 1,000 articles, about $1–3 a month at current volume.
+- **License:** Apache-2.0, like the local model.
+- **Why the provider is pinned:** most OpenRouter providers accept the JSON schema but don't enforce it. Only DeepInfra
+  enforced it in our probe.
+- **Enable it in `.env`:**
+
+  ```
+  NA_LLM_PROVIDER=openai
+  NA_LLM_MODEL=google/gemma-4-26b-a4b-it
+  NA_LLM_API_PROVIDERS=deepinfra
+  NA_LLM_API_KEY=...            # set a monthly spending limit on the key in the OpenRouter dashboard
+  ```
+
+  Then run `python -m news_analyzer llm-check`.
+- **Ratings are labelled.** Hosted ratings are stored as `openrouter:<model>`, so they're distinguishable from
+  local ones.
+- **Cost cap:** each run stops starting new analyses after `NA_LLM_MAX_COST_USD_PER_RUN` (default $0.05).
+
 ## Hardware
 
 Measured on the development machine: Intel i5-10500 (6C/12T), no GPU, inside Docker Desktop with only 2 GB RAM.
