@@ -11,6 +11,8 @@ import yaml
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from news_analyzer.triage import SkipRules
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="NA_", env_file=".env", extra="ignore")
@@ -71,7 +73,7 @@ class Outlet:
 @dataclass(frozen=True)
 class OutletRegistry:
     outlets: tuple[Outlet, ...]
-    skip_analysis_url_patterns: tuple[str, ...] = ()
+    skip_rules: SkipRules = field(default_factory=SkipRules)
     non_person_authors: tuple[str, ...] = field(default=())
 
     @property
@@ -102,7 +104,12 @@ def load_outlets(path: Path) -> OutletRegistry:
     )
     return OutletRegistry(
         outlets=outlets,
-        skip_analysis_url_patterns=tuple(raw.get("skip_analysis_url_patterns") or ()),
+        skip_rules=SkipRules(
+            url_patterns=tuple(raw.get("skip_analysis_url_patterns") or ()),
+            tags=tuple(raw.get("skip_analysis_tags") or ()),
+            title_phrases=tuple(raw.get("skip_analysis_title_phrases") or ()),
+            keep_keywords=tuple(raw.get("keep_analysis_keywords") or ()),
+        ),
         non_person_authors=tuple(raw.get("non_person_authors") or ()),
     )
 

@@ -21,7 +21,6 @@ from statistics import mean
 
 from news_analyzer import db
 from news_analyzer.collectors.http import PoliteClient
-from news_analyzer.collectors.normalize import matches_any
 from news_analyzer.collectors.pages import fetch_page_text
 from news_analyzer.config import OutletRegistry, Settings
 
@@ -47,7 +46,7 @@ def export(settings: Settings, registry: OutletRegistry, n: int = 30, overwrite:
         rows = conn.execute(
             "SELECT * FROM articles WHERE status IN ('pending', 'done') ORDER BY published_at DESC"
         ).fetchall()
-    rows = [r for r in rows if not matches_any(r["url"], registry.skip_analysis_url_patterns)]
+    rows = [r for r in rows if not registry.skip_rules.should_skip(r["url"], r["title"], json.loads(r["tags"]))]
 
     # Round-robin across outlets, opinion pieces first within each outlet, for variety.
     by_outlet: dict[str, list] = defaultdict(list)

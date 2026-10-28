@@ -19,7 +19,8 @@ from pathlib import Path
 from typing import Iterator
 
 from news_analyzer.collectors.models import ArticleCandidate
-from news_analyzer.collectors.normalize import matches_any, title_key
+from news_analyzer.collectors.normalize import title_key
+from news_analyzer.triage import SkipRules
 
 SCHEMA_VERSION = 2
 
@@ -124,14 +125,14 @@ def open_db(path: Path | str) -> Iterator[sqlite3.Connection]:
 
 # --------------------------------------------------------------------------- ingest
 def insert_candidates(conn: sqlite3.Connection, items: list[ArticleCandidate],
-                      skip_patterns: tuple[str, ...] = ()) -> int:
+                      skip_rules: SkipRules = SkipRules()) -> int:
     """Insert new articles, ignoring duplicates (same URL, or same outlet + title). Returns #inserted."""
     now = iso(utcnow())
     inserted = 0
     for c in items:
         if c.paywalled:
             status, reason = "paywalled", None
-        elif matches_any(c.url, skip_patterns):
+        elif skip_rules.should_skip(c.url, c.title, c.tags):
             status, reason = "skipped", "category"
         else:
             status, reason = "pending", None
@@ -145,6 +146,16 @@ def insert_candidates(conn: sqlite3.Connection, items: list[ArticleCandidate],
         inserted += cur.rowcount
     conn.commit()
     return inserted
+
+
+def skip_pending_by_rules(conn: sqlite3.Connection, skip_rules: SkipRules) -> int:
+    """Apply the current skip rules to articles still waiting, so a rule added later also clears the queue."""
+    ids = [r["id"] for r in conn.execute("SELECT id, url, title, tags FROM articles WHERE status = 'pending'")
+           if skip_rules.should_skip(r["url"], r["title"], json.loads(r["tags"]))]
+    conn.executemany("UPDATE articles SET status = 'skipped', skip_reason = 'category' WHERE id = ?",
+                     [(i,) for i in ids])
+    conn.commit()
+    return len(ids)
 
 
 # --------------------------------------------------------------------------- analysis queue

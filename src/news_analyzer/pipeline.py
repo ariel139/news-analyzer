@@ -18,8 +18,11 @@ def run_collection(settings: Settings, registry: OutletRegistry) -> int:
     with PoliteClient(settings.user_agent, settings.request_timeout, settings.per_domain_delay) as client:
         items = collect_all(client, registry, settings)
     with db.open_db(settings.db_path) as conn:
-        inserted = db.insert_candidates(conn, items, registry.skip_analysis_url_patterns)
+        inserted = db.insert_candidates(conn, items, registry.skip_rules)
+        reskipped = db.skip_pending_by_rules(conn, registry.skip_rules)
     log.info("collection: %d items seen, %d new, %.1fs", len(items), inserted, time.monotonic() - t0)
+    if reskipped:
+        log.info("skip rules: %d queued articles moved to skipped(category)", reskipped)
     return inserted
 
 

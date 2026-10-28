@@ -37,6 +37,70 @@ skip_analysis_url_patterns:
   - "/lifestyle"
   - "/travel"
   - "/gossip"
+  - "/tech/"
+  - "/forreal/"
+  - "/shishabat"
+  - "/science/"
+  - "/caricatures"
+  - "/gallery/"
+
+# ...or whose RSS tags include one of these (exact match). ynet and walla URLs carry no section name.
+skip_analysis_tags:
+  - "ספורט"
+  - "תרבות"
+  - "תרבות רשת"
+  - "תרבות: ספרים"
+  - "ביקורת ספרים"
+  - "טלוויזיה"
+  - "תיירות"
+  - "חדשות תיירות"
+  - "טיולים בארץ"
+  - "אוכל"
+  - "לייף סטייל"
+  - "מזג אוויר"
+  - "מזג האוויר"
+  - "טכנולוגיה ומדע"
+  - "חלל ומדע"
+  - "מדריכים וטיפים"
+  - "אפליקציות"
+  - "ForReal"
+  - "שישבת"
+
+# ...or whose title contains one of these.
+skip_analysis_title_phrases:
+  - "היום בהיסטוריה"
+  - "קריקטורה יומית"
+  - "הורוסקופ"
+
+# A skip is final, so any of these in the title or tags sends the article to the LLM anyway
+# (e.g. a sports story about a boycott of Israeli teams).
+keep_analysis_keywords:
+  - "נתניהו"
+  - "כנסת"
+  - "ממשלה"
+  - "ממשלת"
+  - "בחירות"
+  - "קואליציה"
+  - "אופוזיציה"
+  - "צה\"ל"
+  - "חמאס"
+  - "חיזבאללה"
+  - "איראן"
+  - "סמוטריץ'"
+  - "בן גביר"
+  - "ליכוד"
+  - "גיוס"
+  - "בג\"ץ"
+  - "בית המשפט העליון"
+  - "ועדת חקירה"
+  - "7 באוקטובר"
+  - "פלסטינ"
+  - "התנחלו"
+  - "מתנחל"
+  - "חטופים"
+  - "מלחמה"
+  - "טרור"
+  - "חרם"
 
 # Bylines that are desks/agencies rather than people - excluded from author profiles.
 non_person_authors:
