@@ -29,6 +29,7 @@ Setup: `uv venv .venv -p 3.12 && uv pip install -p .venv -e ".[dev]"`, or use pi
   - `prompt.py`: also holds `PROMPT_VERSION`.
   - `llm.py`: Ollama client.
   - `service.py`: retry loop.
+- `triage.py`: pre-LLM skip rules (URL section, RSS tag, title phrase, with keep-keywords that veto a skip), configured in `outlets.yaml` and re-applied to the pending queue on every collection.
 - `pipeline.py` orchestrates; `worker.py` runs the schedule; `evaluation.py` does the eval.
 - `web/` (Node, TypeScript), its own package:
   - `server/`: Express 5. `app.ts` (routes, query validation), `db.ts` (read-only `node:sqlite`, all read SQL), `serialize.ts` (whitelisted fields), `labels.ts` (Hebrew display strings), `authors.ts`.

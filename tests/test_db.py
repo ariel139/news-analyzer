@@ -4,6 +4,7 @@ import pytest
 
 from news_analyzer import db
 from news_analyzer.collectors.models import ArticleCandidate
+from news_analyzer.triage import SkipRules
 
 
 def cand(url, title="כותרת", outlet="ynet", hours_ago=1, **kw):
@@ -34,9 +35,19 @@ def test_initial_status(conn):
         cand("https://x/news/1", "רגיל"),
         cand("https://x/news/2", "בתשלום", paywalled=True),
         cand("https://x/sport/3", "ספורט"),
-    ], skip_patterns=("/sport",))
+    ], skip_rules=SkipRules(url_patterns=("/sport",)))
     rows = {r["title"]: (r["status"], r["skip_reason"]) for r in conn.execute("SELECT * FROM articles")}
     assert rows == {"רגיל": ("pending", None), "בתשלום": ("paywalled", None), "ספורט": ("skipped", "category")}
+
+
+def test_skip_rules_reapplied_to_pending_only(conn):
+    db.insert_candidates(conn, [cand("https://x/1", "תחזית", tags=["מזג אוויר"]),
+                                cand("https://x/2", "רגיל"),
+                                cand("https://x/3", "נותח", tags=["מזג אוויר"])])
+    conn.execute("UPDATE articles SET status = 'done' WHERE title = 'נותח'")
+    assert db.skip_pending_by_rules(conn, SkipRules(tags=("מזג אוויר",))) == 1
+    rows = {r["title"]: (r["status"], r["skip_reason"]) for r in conn.execute("SELECT * FROM articles")}
+    assert rows == {"תחזית": ("skipped", "category"), "רגיל": ("pending", None), "נותח": ("done", None)}
 
 
 def test_pending_queue_newest_first_and_age_limit(conn):
